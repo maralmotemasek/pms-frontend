@@ -47,7 +47,10 @@ function Login() {
     <AuthCard>
 
 
-      <AuthHeader />
+      <AuthHeader
+      title="سیستم مدیریت پروژه"
+      subtitle="ورود به پنل مدیریت سازمانی"
+      />
 
 
 

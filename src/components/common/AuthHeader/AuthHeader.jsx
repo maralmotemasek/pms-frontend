@@ -1,6 +1,11 @@
 import "./AuthHeader.css";
 
-function AuthHeader() {
+
+function AuthHeader({
+  title = "سیستم مدیریت پروژه",
+  subtitle = "ورود به پنل مدیریت سازمانی"
+}) {
+
   return (
     <div className="auth-header">
 
@@ -9,15 +14,16 @@ function AuthHeader() {
       </div>
 
       <h1>
-        سیستم مدیریت پروژه
+        {title}
       </h1>
 
       <p>
-        ورود به پنل مدیریت سازمانی
+        {subtitle}
       </p>
 
     </div>
   );
 }
+
 
 export default AuthHeader;
