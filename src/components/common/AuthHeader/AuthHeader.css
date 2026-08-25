@@ -1,0 +1,49 @@
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+
+.logo-placeholder {
+
+  width: 56px;
+  height: 56px;
+
+  margin: 0 auto 20px;
+
+  background-color: #2563eb;
+
+  border-radius: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: white;
+  font-size: 28px;
+
+}
+
+
+.auth-header h1 {
+
+  margin: 0;
+
+  font-size: 24px;
+
+  font-weight: 700;
+
+  color: #1f2937;
+
+}
+
+
+.auth-header p {
+
+  margin-top: 10px;
+
+  color: #64748b;
+
+  font-size: 15px;
+
+}
