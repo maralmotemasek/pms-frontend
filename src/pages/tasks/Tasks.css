@@ -1,0 +1,541 @@
+.tasks-page {
+  width: 97%;
+
+  margin: 0 auto;
+
+  direction: rtl;
+}
+
+
+/* =========================
+   TOOLBAR
+========================= */
+
+.kanban-toolbar {
+  width: 100%;
+
+  min-height: 68px;
+
+  padding: 12px 14px;
+
+  margin-bottom: 18px;
+
+  background-color: #ffffff;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 12px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 16px;
+}
+
+
+.kanban-toolbar-right {
+  display: flex;
+
+  align-items: center;
+
+  gap: 14px;
+}
+
+
+.kanban-toolbar-title {
+  color: #1e293b;
+
+  font-size: 13px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* =========================
+   FILTER
+========================= */
+
+.kanban-filter {
+  min-width: 190px;
+
+  height: 38px;
+
+  padding: 0 11px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  border: 1px solid #dbe4f0;
+
+  border-radius: 8px;
+
+  background-color: #f8fafc;
+
+  color: #64748b;
+}
+
+
+.kanban-filter select {
+  width: 100%;
+
+  border: none;
+
+  outline: none;
+
+  background-color: transparent;
+
+  color: #475569;
+
+  font-family: inherit;
+
+  font-size: 11px;
+
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+
+/* =========================
+   ADD TASK
+========================= */
+
+.add-task-button {
+  height: 40px;
+
+  padding: 0 14px;
+
+  border: none;
+
+  border-radius: 7px;
+
+  background-color: #2563eb;
+
+  color: #ffffff;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s;
+}
+
+
+.add-task-button:hover {
+  background-color: #1d4ed8;
+}
+
+
+/* =========================
+   KANBAN BOARD
+========================= */
+
+.kanban-board {
+  width: 100%;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 14px;
+
+  direction: rtl;
+}
+
+
+/* =========================
+   COLUMN
+========================= */
+
+.kanban-column {
+  min-width: 0;
+
+  padding: 10px;
+
+  border: 1px solid #dbe4f0;
+
+  border-radius: 12px;
+
+  background-color: #f8fafc;
+}
+
+
+.kanban-column-header {
+  min-height: 34px;
+
+  padding: 0 3px 8px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+}
+
+
+.kanban-column-title {
+  display: flex;
+
+  align-items: center;
+
+  gap: 4px;
+
+  color: #1e293b;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+
+.kanban-column-title strong {
+  color: #0f172a;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  direction: ltr;
+}
+
+
+/* =========================
+   COUNTER
+========================= */
+
+.kanban-count {
+  width: 21px;
+  height: 21px;
+
+  border-radius: 50%;
+
+  color: #ffffff;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  flex-shrink: 0;
+}
+
+
+.kanban-count-todo {
+  background-color: #94a3b8;
+}
+
+
+.kanban-count-doing {
+  background-color: #f59e0b;
+}
+
+
+.kanban-count-done {
+  background-color: #10b981;
+}
+
+
+/* =========================
+   COLUMN CONTENT
+========================= */
+
+.kanban-column-content {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 9px;
+}
+
+
+/* =========================
+   TASK CARD
+========================= */
+
+.kanban-task-card {
+  width: 100%;
+
+  min-height: 112px;
+
+  padding: 12px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 9px;
+
+  background-color: #ffffff;
+
+  box-shadow:
+    0 1px 2px
+    rgba(15, 23, 42, 0.03);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    border-color 0.2s;
+}
+
+
+.kanban-task-card:hover {
+  transform: translateY(-2px);
+
+  border-color: #cbd5e1;
+
+  box-shadow:
+    0 5px 12px
+    rgba(15, 23, 42, 0.06);
+}
+
+
+/* =========================
+   PROJECT NAME
+========================= */
+
+.task-project-name {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 500;
+}
+
+
+/* =========================
+   TASK TITLE
+========================= */
+
+.kanban-task-card h3 {
+  margin: 0;
+
+  min-height: 32px;
+
+  color: #0f172a;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  line-height: 1.7;
+}
+
+
+.task-card-divider {
+  width: 100%;
+
+  height: 1px;
+
+  margin: 8px 0;
+
+  background-color: #e2e8f0;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.task-card-footer {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 10px;
+}
+
+
+/* =========================
+   ASSIGNEE
+========================= */
+
+.task-assignee-info {
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+}
+
+
+.task-assignee-avatar {
+  width: 27px;
+  height: 27px;
+
+  border-radius: 50%;
+
+  background-color: #e2e8f0;
+
+  color: #475569;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+
+.task-assignee-name {
+  color: #475569;
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+}
+
+
+/* =========================
+   PRIORITY
+========================= */
+
+.task-priority {
+  padding: 3px 7px;
+
+  border-radius: 5px;
+
+  font-size: 9px;
+
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+
+.task-priority-high {
+  color: #b91c1c;
+
+  background-color: #fef2f2;
+}
+
+
+.task-priority-medium {
+  color: #92400e;
+
+  background-color: #fef3c7;
+}
+
+
+.task-priority-low {
+  color: #047857;
+
+  background-color: #ecfdf5;
+}
+
+
+/* =========================
+   EMPTY
+========================= */
+
+.kanban-empty {
+  padding: 28px 12px;
+
+  border: 1px dashed #cbd5e1;
+
+  border-radius: 8px;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  text-align: center;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 1000px) {
+
+  .kanban-board {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .tasks-page {
+    width: 100%;
+  }
+
+
+  .kanban-toolbar {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+
+  .kanban-toolbar-right {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+
+  .kanban-filter {
+    width: 100%;
+
+    min-width: 0;
+  }
+
+
+  .add-task-button {
+    width: 100%;
+  }
+
+
+  .kanban-board {
+    grid-template-columns: 1fr;
+  }
+
+}

@@ -13,6 +13,8 @@ import CreateProject from "../pages/projects/CreateProject";
 import EditProject from "../pages/projects/EditProject";
 import ProjectDetails from "../pages/projects/ProjectDetails";
 
+import Tasks from "../pages/tasks/Tasks";
+
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
 
@@ -22,14 +24,13 @@ function AppRoutes() {
 
       <Routes>
 
-        {/* مسیر پیش‌فرض */}
         <Route
           path="/"
-          element={<Navigate to="/login" />}
+          element={
+            <Navigate to="/login" />
+          }
         />
 
-
-        {/* صفحات احراز هویت - بدون Header و Sidebar */}
         <Route
           path="/login"
           element={<Login />}
@@ -41,7 +42,6 @@ function AppRoutes() {
         />
 
 
-        {/* صفحات داخلی سیستم - دارای Header و Sidebar */}
         <Route element={<AppLayout />}>
 
           <Route
@@ -64,8 +64,13 @@ function AppRoutes() {
             element={<EditProject />}
           />
 
-        </Route>
 
+          <Route
+            path="/tasks"
+            element={<Tasks />}
+          />
+
+        </Route>
 
       </Routes>
 
