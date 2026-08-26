@@ -16,6 +16,7 @@ import ProjectDetails from "../pages/projects/ProjectDetails";
 import Tasks from "../pages/tasks/Tasks";
 import CreateTask from "../pages/tasks/CreateTask";
 import TaskDetails from "../pages/tasks/TaskDetails";
+import EditTask from "../pages/tasks/EditTask";
 
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
@@ -86,6 +87,11 @@ function AppRoutes() {
           <Route
             path="/tasks/:id"
             element={<TaskDetails />}
+          />
+
+          <Route
+            path="/tasks/:id/edit"
+            element={<EditTask />}
           />
 
         </Route>

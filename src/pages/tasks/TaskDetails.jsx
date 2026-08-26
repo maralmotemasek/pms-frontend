@@ -8,6 +8,7 @@ import {
   Circle,
   Clock3,
   ListChecks,
+  Pencil,
   Plus,
   Trash2,
   UserRound,
@@ -181,8 +182,7 @@ function TaskDetails() {
         subtask.id === subtaskId
           ? {
               ...subtask,
-              completed:
-                !subtask.completed,
+              completed: !subtask.completed,
             }
           : subtask
       )
@@ -231,6 +231,7 @@ function TaskDetails() {
       <section className="task-details-page">
 
         <div className="task-not-found">
+
           <ListChecks size={40} />
 
           <h2>
@@ -245,6 +246,7 @@ function TaskDetails() {
           >
             بازگشت به وظایف
           </button>
+
         </div>
 
       </section>
@@ -297,7 +299,9 @@ function TaskDetails() {
 
       <div className="task-details-grid">
 
-        {/* RIGHT / MAIN */}
+        {/* =========================
+            MAIN CONTENT
+        ========================== */}
 
         <div className="task-details-main">
 
@@ -397,7 +401,7 @@ function TaskDetails() {
             </form>
 
 
-            {/* LIST */}
+            {/* SUBTASK LIST */}
 
             <div className="subtasks-list">
 
@@ -472,9 +476,13 @@ function TaskDetails() {
         </div>
 
 
-        {/* LEFT / META */}
+        {/* =========================
+            LEFT SIDEBAR
+        ========================== */}
 
         <aside className="task-details-sidebar">
+
+          {/* TASK INFO */}
 
           <div className="task-details-card task-info-card">
 
@@ -536,6 +544,7 @@ function TaskDetails() {
 
                 </div>
 
+
                 <strong>
                   {task.assignee}
                 </strong>
@@ -593,7 +602,9 @@ function TaskDetails() {
           </div>
 
 
-          {/* OVERALL PROGRESS */}
+          {/* =========================
+              PROGRESS
+          ========================== */}
 
           <div className="task-details-card">
 
@@ -625,6 +636,48 @@ function TaskDetails() {
             <small>
               پیشرفت براساس زیر وظیفه‌های انجام شده محاسبه می‌شود.
             </small>
+
+          </div>
+
+
+          {/* =========================
+              EDIT TASK
+          ========================== */}
+
+          <div className="task-details-card task-edit-card">
+
+            <div className="task-edit-card-content">
+
+              <div>
+
+                <h3>
+                  ویرایش وظیفه
+                </h3>
+
+                <p>
+                  اطلاعات، مسئول، اولویت و مهلت انجام وظیفه را ویرایش کنید.
+                </p>
+
+              </div>
+
+
+              <button
+                type="button"
+                className="edit-task-button"
+                onClick={() =>
+                  navigate(
+                    `/tasks/${id}/edit`
+                  )
+                }
+              >
+
+                <Pencil size={17} />
+
+                ویرایش وظیفه
+
+              </button>
+
+            </div>
 
           </div>
 
