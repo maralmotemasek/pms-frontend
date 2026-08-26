@@ -836,13 +836,28 @@
 
   .task-details-page {
     width: 100%;
+    max-width: none;
+    margin: 0;
   }
 
 
+  /* =========================
+     TOP
+  ========================== */
+
   .task-details-top {
+    width: 100%;
+
     flex-direction: column;
 
     align-items: stretch;
+
+    gap: 14px;
+  }
+
+
+  .task-details-top > div {
+    width: 100%;
   }
 
 
@@ -851,19 +866,94 @@
   }
 
 
-  .task-details-sidebar {
+  /* =========================
+     MAIN GRID
+  ========================== */
+
+  .task-details-grid {
+    width: 100%;
+
     display: flex;
+
+    flex-direction: column;
+
+    gap: 16px;
   }
 
 
+  .task-details-main,
+  .task-details-sidebar {
+    width: 100%;
+
+    min-width: 0;
+
+    max-width: none;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+    gap: 16px;
+  }
+
+
+  /* =========================
+     ALL CARDS
+  ========================== */
+
+  .task-details-card,
+  .task-info-card,
+  .task-subtasks-card,
+  .task-edit-card {
+    width: 100%;
+
+    min-width: 0;
+
+    max-width: none;
+
+    margin: 0;
+
+    box-sizing: border-box;
+  }
+
+
+  /* =========================
+     SUBTASK
+  ========================== */
+
   .add-subtask-form {
+    width: 100%;
+
     flex-direction: column;
 
     align-items: stretch;
   }
 
 
+  .add-subtask-form input,
   .add-subtask-form button {
+    width: 100%;
+  }
+
+
+  .subtasks-list,
+  .subtask-item {
+    width: 100%;
+  }
+
+
+  /* =========================
+     EDIT
+  ========================== */
+
+  .task-edit-card-content {
+    width: 100%;
+  }
+
+
+  .edit-task-button {
     width: 100%;
   }
 
