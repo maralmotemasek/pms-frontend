@@ -15,6 +15,7 @@ import ProjectDetails from "../pages/projects/ProjectDetails";
 
 import Tasks from "../pages/tasks/Tasks";
 import CreateTask from "../pages/tasks/CreateTask";
+import TaskDetails from "../pages/tasks/TaskDetails";
 
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
@@ -27,13 +28,17 @@ function AppRoutes() {
 
         <Route
           path="/"
-          element={<Navigate to="/login" />}
+          element={
+            <Navigate to="/login" />
+          }
         />
+
 
         <Route
           path="/login"
           element={<Login />}
         />
+
 
         <Route
           path="/register"
@@ -42,6 +47,8 @@ function AppRoutes() {
 
 
         <Route element={<AppLayout />}>
+
+          {/* PROJECTS */}
 
           <Route
             path="/projects"
@@ -64,6 +71,8 @@ function AppRoutes() {
           />
 
 
+          {/* TASKS */}
+
           <Route
             path="/tasks"
             element={<Tasks />}
@@ -72,6 +81,11 @@ function AppRoutes() {
           <Route
             path="/tasks/create"
             element={<CreateTask />}
+          />
+
+          <Route
+            path="/tasks/:id"
+            element={<TaskDetails />}
           />
 
         </Route>

@@ -20,6 +20,7 @@ const initialTasks = [
     priorityLabel: "اولویت متوسط",
     assignee: "علی رضایی",
   },
+
   {
     id: 2,
     title: "تنظیم تست‌های واحد سیستم پرداخت",
@@ -29,6 +30,7 @@ const initialTasks = [
     priorityLabel: "اولویت پایین",
     assignee: "سارا محمدی",
   },
+
   {
     id: 3,
     title: "یکپارچه‌سازی متدهای پرداخت نقدی",
@@ -38,6 +40,7 @@ const initialTasks = [
     priorityLabel: "اولویت بالا",
     assignee: "رضا احمدی",
   },
+
   {
     id: 4,
     title: "اصلاح فرم ورود و استایل دکمه‌ها",
@@ -47,6 +50,7 @@ const initialTasks = [
     priorityLabel: "اولویت بالا",
     assignee: "مریم حسینی",
   },
+
   {
     id: 5,
     title: "تنظیم ساختار دیتابیس لوکال",
@@ -56,6 +60,7 @@ const initialTasks = [
     priorityLabel: "اولویت پایین",
     assignee: "امیر کریمی",
   },
+
   {
     id: 6,
     title: "ارتقا پکیج‌های توسعه وب",
@@ -74,11 +79,13 @@ const columns = [
     title: "در انتظار",
     englishTitle: "To Do",
   },
+
   {
     key: "doing",
     title: "در حال انجام",
     englishTitle: "Doing",
   },
+
   {
     key: "done",
     title: "تکمیل شده",
@@ -97,7 +104,6 @@ function Tasks() {
 
 
   const filteredTasks = useMemo(() => {
-
     if (priorityFilter === "all") {
       return tasks;
     }
@@ -106,8 +112,10 @@ function Tasks() {
       (task) =>
         task.priority === priorityFilter
     );
-
-  }, [tasks, priorityFilter]);
+  }, [
+    tasks,
+    priorityFilter,
+  ]);
 
 
   const getTasksByStatus = (status) => {
@@ -121,6 +129,8 @@ function Tasks() {
   return (
     <section className="tasks-page">
 
+      {/* TOOLBAR */}
+
       <div className="kanban-toolbar">
 
         <div className="kanban-toolbar-right">
@@ -133,6 +143,7 @@ function Tasks() {
           <div className="kanban-filter">
 
             <Filter size={16} />
+
 
             <select
               value={priorityFilter}
@@ -183,12 +194,16 @@ function Tasks() {
       </div>
 
 
+      {/* BOARD */}
+
       <div className="kanban-board">
 
         {columns.map((column) => {
 
           const columnTasks =
-            getTasksByStatus(column.key);
+            getTasksByStatus(
+              column.key
+            );
 
 
           return (
@@ -228,6 +243,27 @@ function Tasks() {
                   <article
                     className="kanban-task-card"
                     key={task.id}
+
+                    role="button"
+
+                    tabIndex={0}
+
+                    onClick={() =>
+                      navigate(
+                        `/tasks/${task.id}`
+                      )
+                    }
+
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === "Enter" ||
+                        event.key === " "
+                      ) {
+                        navigate(
+                          `/tasks/${task.id}`
+                        );
+                      }
+                    }}
                   >
 
                     <span className="task-project-name">
