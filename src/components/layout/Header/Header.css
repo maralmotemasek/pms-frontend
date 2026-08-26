@@ -1,0 +1,259 @@
+.main-header {
+  min-height: 72px;
+
+  background-color: #ffffff;
+
+  display: grid;
+
+  /*
+    سمت چپ: پروفایل
+    وسط: فضای خالی
+    سمت راست‌تر: سرچ
+    سمت راست: عنوان
+  */
+  grid-template-columns:
+    auto
+    1fr
+    minmax(300px, 420px)
+    auto;
+
+  grid-template-areas:
+    "user space search title";
+
+  align-items: center;
+
+  column-gap: 28px;
+
+  padding: 0 28px;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  /*
+    فقط برای چیدمان Grid
+    ترتیب ستون‌ها را از چپ به راست نگه می‌داریم
+  */
+  direction: ltr;
+}
+
+
+/* ---------------- TITLE ---------------- */
+
+.header-title {
+  grid-area: title;
+
+  margin: 0;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  color: #1e293b;
+
+  white-space: nowrap;
+
+  direction: rtl;
+  text-align: right;
+}
+
+
+/* ---------------- SEARCH ---------------- */
+
+.header-search {
+  grid-area: search;
+
+  width: 100%;
+}
+
+
+.header-search input {
+  width: 100%;
+
+  height: 40px;
+
+  padding: 0 18px;
+
+  border: none;
+
+  border-radius: 22px;
+
+  background-color: #f1f5f9;
+
+  outline: none;
+
+  direction: rtl;
+  text-align: right;
+
+  color: #334155;
+}
+
+
+.header-search input::placeholder {
+  color: #94a3b8;
+}
+
+
+/* ---------------- USER SECTION ---------------- */
+
+.header-user {
+  grid-area: user;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  /*
+    ترتیب دقیق:
+    متن - عکس - خط - زنگوله
+  */
+  direction: ltr;
+
+  white-space: nowrap;
+}
+
+
+/* ---------------- USER TEXT ---------------- */
+
+.user-info {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-end;
+
+  direction: rtl;
+
+  line-height: 1.4;
+}
+
+
+.user-info strong {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.user-info span {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+
+/* ---------------- AVATAR ---------------- */
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+
+  background-color: #e2e8f0;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+
+/* ---------------- DIVIDER ---------------- */
+
+.header-divider {
+  width: 1px;
+
+  height: 32px;
+
+  background-color: #e2e8f0;
+
+  margin: 0 6px;
+}
+
+
+/* ---------------- NOTIFICATION ---------------- */
+
+.notification-button {
+  width: 38px;
+  height: 38px;
+
+  border: none;
+
+  border-radius: 50%;
+
+  background-color: #f1f5f9;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+
+  flex-shrink: 0;
+}
+
+
+.notification-button:hover {
+  background-color: #e2e8f0;
+}
+
+
+/* ---------------- RESPONSIVE ---------------- */
+
+@media (max-width: 1100px) {
+
+  .main-header {
+    grid-template-columns:
+      auto
+      1fr
+      minmax(240px, 320px)
+      auto;
+
+    column-gap: 18px;
+
+    padding: 0 20px;
+  }
+
+}
+
+
+@media (max-width: 900px) {
+
+  .header-search {
+    display: none;
+  }
+
+  .main-header {
+    grid-template-columns:
+      auto
+      1fr
+      auto;
+
+    grid-template-areas:
+      "user space title";
+  }
+
+}
+
+
+@media (max-width: 650px) {
+
+  .user-info {
+    display: none;
+  }
+
+  .header-divider {
+    display: none;
+  }
+
+  .main-header {
+    padding: 0 14px;
+  }
+
+  .header-title {
+    font-size: 15px;
+  }
+
+}

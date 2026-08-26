@@ -1,0 +1,217 @@
+.sidebar {
+  width: 230px;
+  min-height: 100vh;
+
+  background-color: #0f172a;
+
+  color: white;
+
+  padding: 22px 14px;
+
+  flex-shrink: 0;
+
+  direction: rtl;
+}
+
+
+/* =========================
+   BRAND
+========================= */
+
+.sidebar-brand {
+  display: flex;
+
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 0 8px 30px;
+
+  white-space: nowrap;
+}
+
+
+.sidebar-logo {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 9px;
+
+  background-color: #2563eb;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  color: #ffffff;
+
+  flex-shrink: 0;
+}
+
+
+.sidebar-brand-text {
+  color: #ffffff;
+
+  font-size: 16px;
+
+  font-weight: 700;
+
+  line-height: 1.5;
+}
+
+
+/* =========================
+   NAVIGATION
+========================= */
+
+.sidebar-nav {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+
+/* تمام گزینه‌های Sidebar */
+.sidebar-link {
+  width: 100%;
+
+  min-height: 46px;
+
+  padding: 0 14px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  direction: rtl;
+
+  text-decoration: none;
+
+  background-color: transparent;
+
+  color: #94a3b8;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  font-weight: 500;
+
+  text-align: right;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.sidebar-link span {
+  flex: 1;
+}
+
+
+/* آیکون سمت راست */
+.sidebar-icon {
+  flex-shrink: 0;
+
+  color: currentColor;
+}
+
+
+/* Hover */
+.sidebar-link:hover {
+  background-color: #1e293b;
+
+  color: #ffffff;
+}
+
+
+/* گزینه فعال */
+.sidebar-link.active {
+  background-color: #2563eb;
+
+  color: #ffffff;
+
+  font-weight: 600;
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+.logout-button {
+  margin-top: 5px;
+
+  color: #f87171;
+}
+
+
+.logout-button:hover {
+  background-color: rgba(239, 68, 68, 0.12);
+
+  color: #fca5a5;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+
+  .sidebar {
+    width: 205px;
+  }
+
+
+  .sidebar-brand-text {
+    font-size: 14px;
+  }
+
+
+  .sidebar-link {
+    font-size: 13px;
+
+    padding: 0 12px;
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .sidebar {
+    width: 180px;
+
+    padding: 18px 10px;
+  }
+
+
+  .sidebar-brand {
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+
+
+  .sidebar-link {
+    min-height: 42px;
+
+    gap: 9px;
+
+    padding: 0 10px;
+  }
+
+}
