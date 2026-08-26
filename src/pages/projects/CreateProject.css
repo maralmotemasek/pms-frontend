@@ -1,0 +1,656 @@
+.create-project-page {
+  width: 97%;
+
+  margin: 0 auto;
+
+  direction: rtl;
+}
+
+
+/* =========================
+   PAGE HEADER
+========================= */
+
+.create-project-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 20px;
+}
+
+
+.create-project-header h2 {
+  margin: 0 0 7px;
+
+  color: #0f172a;
+
+  font-size: 21px;
+
+  font-weight: 700;
+}
+
+
+.create-project-header p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+
+  font-weight: 500;
+}
+
+
+.back-projects-button {
+  height: 42px;
+
+  padding: 0 14px;
+
+  border: 1px solid #dbe4f0;
+
+  border-radius: 8px;
+
+  background-color: #ffffff;
+
+  color: #334155;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+
+.back-projects-button:hover {
+  background-color: #f8fafc;
+
+  border-color: #cbd5e1;
+}
+
+
+/* =========================
+   CARD
+========================= */
+
+.create-project-card {
+  width: 100%;
+
+  background-color: #ffffff;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 14px;
+
+  padding: 28px;
+}
+
+
+/* =========================
+   FORM
+========================= */
+
+.create-project-form {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 22px 24px;
+}
+
+
+.project-form-full {
+  grid-column: 1 / -1;
+}
+
+
+.project-form-group {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+
+.project-form-group label {
+  color: #1e293b;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+
+.project-form-group label span {
+  margin-right: 4px;
+
+  color: #ef4444;
+}
+
+
+.project-form-group input,
+.project-form-group select,
+.project-form-group textarea {
+  width: 100%;
+
+  border: 1px solid #dbe4f0;
+
+  border-radius: 9px;
+
+  background-color: #f8fafc;
+
+  color: #1e293b;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  outline: none;
+
+  transition: 0.2s;
+}
+
+
+.project-form-group input,
+.project-form-group select {
+  height: 46px;
+
+  padding: 0 13px;
+}
+
+
+.project-form-group textarea {
+  min-height: 115px;
+
+  padding: 13px;
+
+  resize: vertical;
+
+  line-height: 1.8;
+}
+
+
+.project-form-group input:focus,
+.project-form-group select:focus,
+.project-form-group textarea:focus {
+  border-color: #2563eb;
+
+  background-color: #ffffff;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.08);
+}
+
+
+.project-form-group input::placeholder,
+.project-form-group textarea::placeholder {
+  color: #94a3b8;
+}
+
+
+/* =========================
+   PERSIAN DATE PICKER
+========================= */
+
+.persian-date-container {
+  width: 100% !important;
+}
+
+
+.persian-date-input {
+  width: 100% !important;
+
+  height: 46px !important;
+
+  padding: 0 13px !important;
+
+  border: 1px solid #dbe4f0 !important;
+
+  border-radius: 9px !important;
+
+  background-color: #f8fafc !important;
+
+  color: #1e293b !important;
+
+  font-family: inherit !important;
+
+  font-size: 13px !important;
+
+  direction: rtl;
+
+  text-align: right;
+
+  outline: none !important;
+
+  cursor: pointer;
+}
+
+
+.persian-date-input:focus {
+  border-color: #2563eb !important;
+
+  background-color: #ffffff !important;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(37, 99, 235, 0.08) !important;
+}
+
+
+/* خود تقویم */
+
+.rmdp-container {
+  width: 100%;
+}
+
+
+.rmdp-calendar {
+  direction: rtl;
+}
+
+
+.rmdp-day.rmdp-selected span {
+  background-color: #2563eb;
+}
+
+
+.rmdp-day:not(.rmdp-disabled):not(.rmdp-day-hidden) span:hover {
+  background-color: #dbeafe;
+
+  color: #1e3a8a;
+}
+
+
+/* =========================
+   DOCUMENT UPLOAD
+========================= */
+
+.documents-dropzone {
+  width: 100%;
+
+  min-height: 150px;
+
+  padding: 24px;
+
+  border: 2px dashed #cbd5e1;
+
+  border-radius: 12px;
+
+  background-color: #f8fafc;
+
+  color: #64748b;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 9px;
+
+  text-align: center;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+
+.documents-dropzone:hover {
+  border-color: #2563eb;
+
+  background-color: #f8fbff;
+
+  color: #2563eb;
+}
+
+
+.documents-dropzone.dragging {
+  border-color: #2563eb;
+
+  background-color: #eff6ff;
+
+  color: #2563eb;
+
+  transform: scale(1.002);
+}
+
+
+.documents-dropzone strong {
+  color: #334155;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+
+.documents-dropzone span {
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  font-weight: 500;
+}
+
+
+.documents-file-input {
+  display: none;
+}
+
+
+/* =========================
+   UPLOADED DOCUMENTS
+========================= */
+
+.uploaded-documents {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin-top: 4px;
+}
+
+
+.uploaded-document {
+  width: 100%;
+
+  min-height: 56px;
+
+  padding: 9px 12px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 9px;
+
+  background-color: #ffffff;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+}
+
+
+.uploaded-document-info {
+  min-width: 0;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+
+.uploaded-document-icon {
+  width: 36px;
+  height: 36px;
+
+  border-radius: 8px;
+
+  background-color: #eff6ff;
+
+  color: #2563eb;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-shrink: 0;
+}
+
+
+.uploaded-document-info > div:last-child {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+
+.uploaded-document-info strong {
+  max-width: 500px;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #1e293b;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+
+.uploaded-document-info span {
+  color: #94a3b8;
+
+  font-size: 10px;
+}
+
+
+.remove-document-button {
+  width: 32px;
+  height: 32px;
+
+  border: none;
+
+  border-radius: 7px;
+
+  background-color: transparent;
+
+  color: #94a3b8;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  cursor: pointer;
+
+  flex-shrink: 0;
+
+  transition: 0.2s;
+}
+
+
+.remove-document-button:hover {
+  background-color: #fef2f2;
+
+  color: #dc2626;
+}
+
+
+/* =========================
+   VALIDATION
+========================= */
+
+.project-form-error {
+  color: #dc2626;
+
+  font-size: 11px;
+
+  font-weight: 500;
+}
+
+
+/* =========================
+   ACTIONS
+========================= */
+
+.project-form-actions {
+  grid-column: 1 / -1;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding-top: 18px;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+
+.cancel-project-button,
+.save-project-button {
+  height: 43px;
+
+  padding: 0 18px;
+
+  border-radius: 8px;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+
+.cancel-project-button {
+  border: 1px solid #dbe4f0;
+
+  background-color: #ffffff;
+
+  color: #334155;
+}
+
+
+.cancel-project-button:hover {
+  background-color: #f8fafc;
+}
+
+
+.save-project-button {
+  border: 1px solid #2563eb;
+
+  background-color: #2563eb;
+
+  color: #ffffff;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 8px;
+}
+
+
+.save-project-button:hover {
+  background-color: #1d4ed8;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 800px) {
+
+  .create-project-page {
+    width: 100%;
+  }
+
+
+  .create-project-form {
+    grid-template-columns: 1fr;
+  }
+
+
+  .project-form-full,
+  .project-form-actions {
+    grid-column: auto;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .create-project-header {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+
+  .back-projects-button {
+    align-self: flex-start;
+  }
+
+
+  .create-project-card {
+    padding: 18px;
+  }
+
+
+  .documents-dropzone {
+    min-height: 130px;
+
+    padding: 18px;
+  }
+
+
+  .uploaded-document-info strong {
+    max-width: 190px;
+  }
+
+
+  .project-form-actions {
+    flex-direction: column-reverse;
+
+    align-items: stretch;
+  }
+
+
+  .cancel-project-button,
+  .save-project-button {
+    width: 100%;
+  }
+
+}
