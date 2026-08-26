@@ -14,6 +14,7 @@ import EditProject from "../pages/projects/EditProject";
 import ProjectDetails from "../pages/projects/ProjectDetails";
 
 import Tasks from "../pages/tasks/Tasks";
+import CreateTask from "../pages/tasks/CreateTask";
 
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
@@ -26,9 +27,7 @@ function AppRoutes() {
 
         <Route
           path="/"
-          element={
-            <Navigate to="/login" />
-          }
+          element={<Navigate to="/login" />}
         />
 
         <Route
@@ -68,6 +67,11 @@ function AppRoutes() {
           <Route
             path="/tasks"
             element={<Tasks />}
+          />
+
+          <Route
+            path="/tasks/create"
+            element={<CreateTask />}
           />
 
         </Route>

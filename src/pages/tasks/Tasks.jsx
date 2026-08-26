@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Plus,
@@ -87,6 +88,8 @@ const columns = [
 
 
 function Tasks() {
+  const navigate = useNavigate();
+
   const [tasks] = useState(initialTasks);
 
   const [priorityFilter, setPriorityFilter] =
@@ -94,6 +97,7 @@ function Tasks() {
 
 
   const filteredTasks = useMemo(() => {
+
     if (priorityFilter === "all") {
       return tasks;
     }
@@ -102,6 +106,7 @@ function Tasks() {
       (task) =>
         task.priority === priorityFilter
     );
+
   }, [tasks, priorityFilter]);
 
 
@@ -115,10 +120,6 @@ function Tasks() {
 
   return (
     <section className="tasks-page">
-
-      {/* =========================
-          TOOLBAR
-      ========================== */}
 
       <div className="kanban-toolbar">
 
@@ -168,11 +169,9 @@ function Tasks() {
         <button
           type="button"
           className="add-task-button"
-          onClick={() => {
-            console.log(
-              "Create Task page will be added next."
-            );
-          }}
+          onClick={() =>
+            navigate("/tasks/create")
+          }
         >
 
           <Plus size={18} />
@@ -183,10 +182,6 @@ function Tasks() {
 
       </div>
 
-
-      {/* =========================
-          KANBAN BOARD
-      ========================== */}
 
       <div className="kanban-board">
 
@@ -201,8 +196,6 @@ function Tasks() {
               className={`kanban-column kanban-column-${column.key}`}
               key={column.key}
             >
-
-              {/* COLUMN HEADER */}
 
               <div className="kanban-column-header">
 
@@ -228,8 +221,6 @@ function Tasks() {
               </div>
 
 
-              {/* TASKS */}
-
               <div className="kanban-column-content">
 
                 {columnTasks.map((task) => (
@@ -239,14 +230,10 @@ function Tasks() {
                     key={task.id}
                   >
 
-                    {/* PROJECT */}
-
                     <span className="task-project-name">
                       {task.project}
                     </span>
 
-
-                    {/* TITLE */}
 
                     <h3>
                       {task.title}
@@ -255,8 +242,6 @@ function Tasks() {
 
                     <div className="task-card-divider" />
 
-
-                    {/* FOOTER */}
 
                     <div className="task-card-footer">
 
@@ -295,9 +280,7 @@ function Tasks() {
                 {columnTasks.length === 0 && (
 
                   <div className="kanban-empty">
-
                     وظیفه‌ای در این بخش وجود ندارد.
-
                   </div>
 
                 )}
