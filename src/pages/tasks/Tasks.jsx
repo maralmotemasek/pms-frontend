@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
-  Plus,
   Filter,
+  GripVertical,
+  Plus,
   UserRound,
 } from "lucide-react";
 
@@ -97,11 +98,23 @@ const columns = [
 function Tasks() {
   const navigate = useNavigate();
 
-  const [tasks] = useState(initialTasks);
+
+  const [tasks, setTasks] =
+    useState(initialTasks);
 
   const [priorityFilter, setPriorityFilter] =
     useState("all");
 
+  const [draggingTaskId, setDraggingTaskId] =
+    useState(null);
+
+  const [activeColumn, setActiveColumn] =
+    useState(null);
+
+
+  /* =========================
+     FILTER TASKS
+  ========================== */
 
   const filteredTasks = useMemo(() => {
     if (priorityFilter === "all") {
@@ -126,10 +139,119 @@ function Tasks() {
   };
 
 
+  /* =========================
+     DRAG START
+  ========================== */
+
+  const handleDragStart = (
+    event,
+    taskId
+  ) => {
+    setDraggingTaskId(taskId);
+
+    event.dataTransfer.effectAllowed =
+      "move";
+
+    event.dataTransfer.setData(
+      "text/plain",
+      String(taskId)
+    );
+  };
+
+
+  /* =========================
+     DRAG END
+  ========================== */
+
+  const handleDragEnd = () => {
+    setDraggingTaskId(null);
+
+    setActiveColumn(null);
+  };
+
+
+  /* =========================
+     DRAG OVER
+  ========================== */
+
+  const handleDragOver = (
+    event,
+    columnStatus
+  ) => {
+    event.preventDefault();
+
+    event.dataTransfer.dropEffect =
+      "move";
+
+    setActiveColumn(columnStatus);
+  };
+
+
+  /* =========================
+     DROP TASK
+  ========================== */
+
+  const handleDrop = (
+    event,
+    newStatus
+  ) => {
+    event.preventDefault();
+
+
+    const droppedTaskId = Number(
+      event.dataTransfer.getData(
+        "text/plain"
+      )
+    );
+
+
+    if (!droppedTaskId) {
+      setDraggingTaskId(null);
+      setActiveColumn(null);
+
+      return;
+    }
+
+
+    setTasks((previousTasks) =>
+      previousTasks.map((task) => {
+        if (
+          task.id !== droppedTaskId
+        ) {
+          return task;
+        }
+
+
+        return {
+          ...task,
+          status: newStatus,
+        };
+      })
+    );
+
+
+    setDraggingTaskId(null);
+
+    setActiveColumn(null);
+
+
+    /*
+      بعداً وقتی API آماده شد:
+
+      await updateTaskStatus(
+        droppedTaskId,
+        newStatus
+      )
+    */
+  };
+
+
   return (
     <section className="tasks-page">
 
-      {/* TOOLBAR */}
+      {/* =========================
+          TOOLBAR
+      ========================== */}
 
       <div className="kanban-toolbar">
 
@@ -194,7 +316,9 @@ function Tasks() {
       </div>
 
 
-      {/* BOARD */}
+      {/* =========================
+          KANBAN BOARD
+      ========================== */}
 
       <div className="kanban-board">
 
@@ -208,9 +332,50 @@ function Tasks() {
 
           return (
             <div
-              className={`kanban-column kanban-column-${column.key}`}
               key={column.key}
+
+              className={
+                activeColumn === column.key
+                  ? `kanban-column kanban-column-${column.key} drag-over`
+                  : `kanban-column kanban-column-${column.key}`
+              }
+
+              onDragOver={(event) =>
+                handleDragOver(
+                  event,
+                  column.key
+                )
+              }
+
+              onDragEnter={(event) => {
+                event.preventDefault();
+
+                setActiveColumn(
+                  column.key
+                );
+              }}
+
+              onDragLeave={(event) => {
+                if (
+                  !event.currentTarget.contains(
+                    event.relatedTarget
+                  )
+                ) {
+                  setActiveColumn(null);
+                }
+              }}
+
+              onDrop={(event) =>
+                handleDrop(
+                  event,
+                  column.key
+                )
+              }
             >
+
+              {/* =========================
+                  COLUMN HEADER
+              ========================== */}
 
               <div className="kanban-column-header">
 
@@ -236,17 +401,22 @@ function Tasks() {
               </div>
 
 
+              {/* =========================
+                  TASK CARDS
+              ========================== */}
+
               <div className="kanban-column-content">
 
                 {columnTasks.map((task) => (
 
                   <article
-                    className="kanban-task-card"
                     key={task.id}
 
-                    role="button"
-
-                    tabIndex={0}
+                    className={
+                      draggingTaskId === task.id
+                        ? "kanban-task-card dragging"
+                        : "kanban-task-card"
+                    }
 
                     onClick={() =>
                       navigate(
@@ -254,10 +424,13 @@ function Tasks() {
                       )
                     }
 
+                    role="button"
+
+                    tabIndex={0}
+
                     onKeyDown={(event) => {
                       if (
-                        event.key === "Enter" ||
-                        event.key === " "
+                        event.key === "Enter"
                       ) {
                         navigate(
                           `/tasks/${task.id}`
@@ -266,10 +439,67 @@ function Tasks() {
                     }}
                   >
 
-                    <span className="task-project-name">
-                      {task.project}
-                    </span>
+                    {/* =========================
+                        CARD TOP
+                    ========================== */}
 
+                    <div className="task-card-top">
+
+                      <span className="task-project-name">
+                        {task.project}
+                      </span>
+
+
+                      <div
+                        className="task-drag-handle"
+
+                        draggable
+
+                        role="button"
+
+                        tabIndex={0}
+
+                        title="برای جابه‌جایی بکشید"
+
+                        aria-label="جابه‌جایی وظیفه"
+
+                        onClick={(event) =>
+                          event.stopPropagation()
+                        }
+
+                        onKeyDown={(event) =>
+                          event.stopPropagation()
+                        }
+
+                        onDragStart={(event) => {
+                          event.stopPropagation();
+
+                          handleDragStart(
+                            event,
+                            task.id
+                          );
+                        }}
+
+                        onDragEnd={(event) => {
+                          event.stopPropagation();
+
+                          handleDragEnd();
+                        }}
+                      >
+
+                        <GripVertical
+                          size={17}
+                          strokeWidth={2}
+                        />
+
+                      </div>
+
+                    </div>
+
+
+                    {/* =========================
+                        TITLE
+                    ========================== */}
 
                     <h3>
                       {task.title}
@@ -278,6 +508,10 @@ function Tasks() {
 
                     <div className="task-card-divider" />
 
+
+                    {/* =========================
+                        FOOTER
+                    ========================== */}
 
                     <div className="task-card-footer">
 
@@ -313,15 +547,42 @@ function Tasks() {
                 ))}
 
 
+                {/* EMPTY COLUMN */}
+
                 {columnTasks.length === 0 && (
 
                   <div className="kanban-empty">
-                    وظیفه‌ای در این بخش وجود ندارد.
+
+                    <span>
+                      وظیفه‌ای در این بخش وجود ندارد.
+                    </span>
+
+
+                    {draggingTaskId && (
+                      <small>
+                        وظیفه را اینجا رها کنید
+                      </small>
+                    )}
+
                   </div>
 
                 )}
 
               </div>
+
+
+              {/* =========================
+                  DROP HINT
+              ========================== */}
+
+              {activeColumn === column.key &&
+                draggingTaskId && (
+
+                  <div className="kanban-drop-hint">
+                    وظیفه را اینجا رها کنید
+                  </div>
+
+                )}
 
             </div>
           );
