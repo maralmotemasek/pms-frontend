@@ -1,11 +1,9 @@
 import "./AuthCard.css";
 
-function AuthCard({ children }) {
+function AuthCard({ children, className = "" }) {
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        {children}
-      </div>
+    <div className={`auth-card ${className}`}>
+      {children}
     </div>
   );
 }

@@ -1,201 +1,221 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
+import {
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 import AuthCard from "../../../components/common/AuthCard/AuthCard";
 import AuthHeader from "../../../components/common/AuthHeader/AuthHeader";
 
-import { loginUser } from "../../../services/authService";
+import {
+  loginUser,
+} from "../../../services/authService";
 
 import "./Login.css";
 
-
 function Login() {
+  const navigate = useNavigate();
 
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [serverError, setServerError] =
+    useState("");
+
+  const [isLoading, setIsLoading] =
+    useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm();
-
-
+  } = useForm({
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
 
   const onSubmit = async (data) => {
+    setServerError("");
+    setIsLoading(true);
 
     try {
+      await loginUser({
+        email: data.email.trim(),
+        password: data.password,
+      });
 
-      console.log("Login data:", data);
-
-      // بعداً با API واقعی Backend وصل می‌شود
-      const response = await loginUser(data);
-
-      console.log(response);
-
-
+      navigate("/projects");
     } catch (error) {
+      console.error("Login error:", error);
 
-      console.log(error);
+      const status =
+        error.response?.status;
 
+      const detail =
+        error.response?.data?.detail;
+
+      if (
+        status === 400 ||
+        status === 401
+      ) {
+        setServerError(
+          typeof detail === "string"
+            ? detail
+            : "ایمیل یا رمز عبور صحیح نیست."
+        );
+      } else if (status === 422) {
+        setServerError(
+          "اطلاعات وارد شده معتبر نیست."
+        );
+      } else if (!error.response) {
+        setServerError(
+          "ارتباط با سرور برقرار نشد."
+        );
+      } else {
+        setServerError(
+          "خطایی در ورود به حساب کاربری رخ داد."
+        );
+      }
+    } finally {
+      setIsLoading(false);
     }
-
   };
 
-
-
   return (
+    <div className="login-page">
+      <AuthCard className="login-card">
 
-    <AuthCard>
+        <AuthHeader
+          subtitle="ورود به پنل مدیریت سازمانی"
+        />
 
-
-      <AuthHeader
-      title="سیستم مدیریت پروژه"
-      subtitle="ورود به پنل مدیریت سازمانی"
-      />
-
-
-
-      <form
-        className="login-form"
-        onSubmit={handleSubmit(onSubmit)}
-      >
-
-
-        <div className="form-group">
-
-
-          <label>
-            نام کاربری یا ایمیل
-          </label>
-
-
-          <input
-
-            type="text"
-
-            placeholder="admin@company.ir"
-
-
-            {...register("email", {
-
-              required:
-                "وارد کردن ایمیل الزامی است",
-
-            })}
-
-          />
-
-
-          {
-            errors.email &&
-            <span className="form-error">
-              {errors.email.message}
-            </span>
-          }
-
-
-        </div>
-
-
-
-
-
-        <div className="form-group">
-
-
-          <label>
-            رمز عبور
-          </label>
-
-
-          <input
-
-            type="password"
-
-            placeholder="••••••••"
-
-
-            {...register("password", {
-
-              required:
-                "وارد کردن رمز عبور الزامی است",
-
-              minLength: {
-
-                value: 6,
-
-                message:
-                  "رمز عبور حداقل باید ۶ کاراکتر باشد"
-
-              }
-
-            })}
-
-          />
-
-
-          {
-            errors.password &&
-            <span className="form-error">
-              {errors.password.message}
-            </span>
-          }
-
-
-        </div>
-
-
-
-
-
-        <button
-          type="submit"
-          className="login-button"
+        <form
+          className="login-form"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
         >
 
-          ورود به سیستم
+          <div className="login-form-group">
+            <label htmlFor="email">
+              ایمیل
+            </label>
 
-        </button>
+            <input
+              id="email"
+              type="email"
+              dir="ltr"
+              autoComplete="email"
+              placeholder="example@email.com"
+              {...register("email", {
+                required:
+                  "ایمیل الزامی است",
 
+                pattern: {
+                  value:
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                  message:
+                    "فرمت ایمیل صحیح نیست",
+                },
+              })}
+            />
 
+            {errors.email && (
+              <span className="login-field-error">
+                {errors.email.message}
+              </span>
+            )}
+          </div>
 
+          <div className="login-form-group">
+            <label htmlFor="password">
+              رمز عبور
+            </label>
 
+            <div className="login-password-wrapper">
+              <input
+                id="password"
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                autoComplete="current-password"
+                placeholder="رمز عبور خود را وارد کنید"
+                {...register("password", {
+                  required:
+                    "رمز عبور الزامی است",
+                })}
+              />
 
-        <div className="auth-links">
+              <button
+                type="button"
+                className="login-password-toggle"
+                onClick={() =>
+                  setShowPassword(
+                    (prev) => !prev
+                  )
+                }
+                aria-label="نمایش یا مخفی کردن رمز عبور"
+              >
+                {showPassword ? (
+                  <EyeOff size={19} />
+                ) : (
+                  <Eye size={19} />
+                )}
+              </button>
+            </div>
 
+            {errors.password && (
+              <span className="login-field-error">
+                {errors.password.message}
+              </span>
+            )}
+          </div>
 
-          <a href="#">
+          {serverError && (
+            <div className="login-server-error">
+              {serverError}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="login-submit"
+            disabled={isLoading}
+          >
+            {isLoading
+              ? "در حال ورود..."
+              : "ورود"}
+          </button>
+
+          <button
+            type="button"
+            className="login-forgot-password"
+          >
             رمز عبور خود را فراموش کرده‌اید؟
-          </a>
+          </button>
 
-
-
-          <p>
-
-            هنوز ثبت نام نکرده‌اید؟
-
-            {" "}
-
+          <div className="login-register-link">
+            <span>
+              هنوز ثبت نام نکرده‌اید؟
+            </span>
 
             <Link to="/register">
               ثبت نام
             </Link>
+          </div>
 
-
-          </p>
-
-
-        </div>
-
-
-
-      </form>
-
-
-    </AuthCard>
-
+        </form>
+      </AuthCard>
+    </div>
   );
-
 }
-
 
 export default Login;
