@@ -1,91 +1,105 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import {
+  useState,
+} from "react";
 
 import {
-  Plus,
+  Link,
+} from "react-router-dom";
+
+import {
   Download,
   Filter,
+  Pencil,
+  Plus,
 } from "lucide-react";
+
+import {
+  currentUser,
+  mockProjects,
+  PROJECT_ROLES,
+} from "../../data/projectMockData";
+
+import {
+  canCreateProject,
+  canEditProject,
+  canViewProject,
+  getProjectManager,
+  getProjectMembership,
+  getProjectRoleLabel,
+} from "../../utils/projectPermissions";
 
 import "./Projects.css";
 
 
-const mockProjects = [
-  {
-    id: 1,
-    title: "سیستم یکپارچه‌سازی انبارداری",
-    status: "in-progress",
-    statusLabel: "در حال انجام",
-    progress: 80,
-    manager: "سهراب سپهری",
-    startDate: "۱۴۰۴/۰۶/۱۵",
-  },
-  {
-    id: 2,
-    title: "بازطراحی پنل مشتریان تجارت الکترونیک",
-    status: "delayed",
-    statusLabel: "به تعویق افتاده",
-    progress: 35,
-    manager: "مهرداد بهرامی",
-    startDate: "۱۴۰۴/۰۷/۱۰",
-  },
-  {
-    id: 3,
-    title: "پورتال جدید خدمات پس از فروش",
-    status: "review",
-    statusLabel: "در انتظار تایید",
-    progress: 95,
-    manager: "رویا رضایی",
-    startDate: "۱۴۰۴/۰۵/۰۱",
-  },
-  {
-    id: 4,
-    title: "توسعه نرم‌افزار موبایل سازمان",
-    status: "completed",
-    statusLabel: "تکمیل شده",
-    progress: 100,
-    manager: "آرش کمالگیر",
-    startDate: "۱۴۰۴/۰۴/۱۸",
-  },
-];
-
-
 function Projects() {
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("all");
+
+
+  /*
+    فقط پروژه‌هایی که User
+    در آنها ProjectMember است.
+  */
+  const userProjects =
+    mockProjects.filter(
+      (project) =>
+        canViewProject(
+          currentUser,
+          project
+        )
+    );
 
 
   const filteredProjects =
     statusFilter === "all"
-      ? mockProjects
-      : mockProjects.filter(
-          (project) => project.status === statusFilter
+      ? userProjects
+      : userProjects.filter(
+          (project) =>
+            project.status ===
+            statusFilter
         );
 
 
   return (
     <section className="projects-page">
 
-      {/* Toolbar */}
+      {/* =====================
+          TOOLBAR
+      ====================== */}
+
       <div className="projects-toolbar">
 
         <div className="projects-filter-section">
 
-          <span className="projects-count-label">
-            نمایش کل پروژه‌ها
-          </span>
+          <div className="projects-list-info">
+
+            <span className="projects-count-label">
+              پروژه‌های من
+            </span>
+
+            <span className="projects-total-count">
+              {userProjects.length} پروژه
+            </span>
+
+          </div>
 
 
           <div className="status-filter">
+
             <Filter size={17} />
 
             <select
               value={statusFilter}
               onChange={(event) =>
-                setStatusFilter(event.target.value)
+                setStatusFilter(
+                  event.target.value
+                )
               }
             >
               <option value="all">
-                فیلتر بر اساس وضعیت
+                همه وضعیت‌ها
               </option>
 
               <option value="in-progress">
@@ -104,6 +118,7 @@ function Projects() {
                 تکمیل شده
               </option>
             </select>
+
           </div>
 
         </div>
@@ -123,23 +138,32 @@ function Projects() {
           </button>
 
 
-          <Link
-            to="/projects/create"
-            className="create-project-button"
-          >
-            <Plus size={19} />
+          {canCreateProject(
+            currentUser
+          ) && (
 
-            <span>
-              ایجاد پروژه جدید
-            </span>
-          </Link>
+            <Link
+              to="/projects/create"
+              className="create-project-button"
+            >
+              <Plus size={19} />
+
+              <span>
+                ایجاد پروژه جدید
+              </span>
+            </Link>
+
+          )}
 
         </div>
 
       </div>
 
 
-      {/* Projects table */}
+      {/* =====================
+          TABLE
+      ====================== */}
+
       <div className="projects-table-card">
 
         <div className="projects-table-wrapper">
@@ -147,78 +171,213 @@ function Projects() {
           <table className="projects-table">
 
             <thead>
+
               <tr>
-                <th>عنوان پروژه</th>
-                <th>وضعیت پروژه</th>
-                <th>پیشرفت</th>
-                <th>مدیر پروژه</th>
-                <th>تاریخ شروع</th>
+                <th>
+                  عنوان پروژه
+                </th>
+
+                <th>
+                  وضعیت پروژه
+                </th>
+
+                <th>
+                  پیشرفت
+                </th>
+
+                <th>
+                  مدیر پروژه
+                </th>
+
+                <th>
+                  نقش من
+                </th>
+
+                <th>
+                  تاریخ شروع
+                </th>
+
+                <th>
+                  عملیات
+                </th>
               </tr>
+
             </thead>
 
 
             <tbody>
 
-              {filteredProjects.map((project) => (
+              {filteredProjects.map(
+                (project) => {
 
-                <tr key={project.id}>
+                  const manager =
+                    getProjectManager(
+                      project
+                    );
 
-                  <td>
-                    <Link
-                      to={`/projects/${project.id}`}
-                      className="project-title-link"
+
+                  const membership =
+                    getProjectMembership(
+                      project,
+                      currentUser.id
+                    );
+
+
+                  const userCanEdit =
+                    canEditProject(
+                      currentUser,
+                      project
+                    );
+
+
+                  return (
+                    <tr
+                      key={
+                        project.id
+                      }
                     >
-                      {project.title}
-                    </Link>
-                  </td>
+
+                      {/* TITLE */}
+
+                      <td>
+
+                        <Link
+                          to={`/projects/${project.id}`}
+                          className="project-title-link"
+                        >
+                          {
+                            project.title
+                          }
+                        </Link>
+
+                      </td>
 
 
-                  <td>
-                    <span
-                      className={`project-status status-${project.status}`}
-                    >
-                      {project.statusLabel}
-                    </span>
-                  </td>
+                      {/* STATUS */}
+
+                      <td>
+
+                        <span
+                          className={`project-status status-${project.status}`}
+                        >
+                          {
+                            project.statusLabel
+                          }
+                        </span>
+
+                      </td>
 
 
-                  <td>
+                      {/* PROGRESS */}
 
-                    <div className="progress-cell">
+                      <td>
 
-                      <span className="progress-number">
-                        {project.progress}%
-                      </span>
+                        <div className="progress-cell">
 
-
-                      <div className="progress-track">
-
-                        <div
-                          className={`progress-fill progress-${project.status}`}
-                          style={{
-                            width: `${project.progress}%`,
-                          }}
-                        />
-
-                      </div>
-
-                    </div>
-
-                  </td>
+                          <span className="progress-number">
+                            {
+                              project.progress
+                            }
+                            %
+                          </span>
 
 
-                  <td>
-                    {project.manager}
-                  </td>
+                          <div className="progress-track">
+
+                            <div
+                              className={`progress-fill progress-${project.status}`}
+                              style={{
+                                width:
+                                  `${project.progress}%`,
+                              }}
+                            />
+
+                          </div>
+
+                        </div>
+
+                      </td>
 
 
-                  <td>
-                    {project.startDate}
-                  </td>
+                      {/* MANAGER */}
 
-                </tr>
+                      <td>
+                        {manager
+                          ?.fullName ||
+                          "تعیین نشده"}
+                      </td>
 
-              ))}
+
+                      {/* MY ROLE */}
+
+                      <td>
+
+                        <span
+                          className={
+                            membership
+                              ?.role ===
+                            PROJECT_ROLES.PROJECT_MANAGER
+                              ? "project-user-role role-manager"
+                              : "project-user-role role-member"
+                          }
+                        >
+                          {
+                            getProjectRoleLabel(
+                              membership
+                                ?.role
+                            )
+                          }
+                        </span>
+
+                      </td>
+
+
+                      {/* START DATE */}
+
+                      <td>
+                        {
+                          project.startDate
+                        }
+                      </td>
+
+
+                      {/* ACTIONS */}
+
+                      <td>
+
+                        <div className="project-row-actions">
+
+                          {userCanEdit ? (
+
+                            <Link
+                              to={`/projects/${project.id}/edit`}
+                              className="edit-project-button"
+                            >
+                              <Pencil
+                                size={16}
+                              />
+
+                              <span>
+                                ویرایش
+                              </span>
+                            </Link>
+
+                          ) : (
+
+                            <span className="project-no-edit">
+                              فقط مشاهده
+                            </span>
+
+                          )}
+
+                        </div>
+
+                      </td>
+
+                    </tr>
+                  );
+                }
+              )}
 
             </tbody>
 
@@ -227,10 +386,18 @@ function Projects() {
         </div>
 
 
-        {filteredProjects.length === 0 && (
+        {filteredProjects.length ===
+          0 && (
+
           <div className="projects-empty">
-            پروژه‌ای با این وضعیت وجود ندارد.
+
+            {userProjects.length ===
+            0
+              ? "در حال حاضر عضو هیچ پروژه‌ای نیستید."
+              : "پروژه‌ای با این وضعیت وجود ندارد."}
+
           </div>
+
         )}
 
       </div>

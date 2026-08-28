@@ -1,6 +1,8 @@
 .projects-page {
   width: 97%;
+
   margin: 0 auto;
+
   direction: rtl;
 }
 
@@ -17,6 +19,7 @@
   background-color: #ffffff;
 
   border: 1px solid #e2e8f0;
+
   border-radius: 14px;
 
   padding: 14px 16px;
@@ -24,6 +27,7 @@
   display: flex;
 
   align-items: center;
+
   justify-content: space-between;
 
   gap: 20px;
@@ -41,10 +45,36 @@
 }
 
 
+.projects-list-info {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+
 .projects-count-label {
   color: #1e293b;
 
   font-size: 14px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+.projects-total-count {
+  padding: 4px 8px;
+
+  border-radius: 999px;
+
+  background-color: #eff6ff;
+
+  color: #2563eb;
+
+  font-size: 10px;
 
   font-weight: 700;
 
@@ -99,7 +129,7 @@
 
 
 /* =========================
-   ACTIONS
+   TOOLBAR ACTIONS
 ========================= */
 
 .projects-actions {
@@ -122,6 +152,7 @@
   display: inline-flex;
 
   align-items: center;
+
   justify-content: center;
 
   gap: 8px;
@@ -199,7 +230,7 @@
 .projects-table {
   width: 100%;
 
-  min-width: 760px;
+  min-width: 980px;
 
   border-collapse: collapse;
 
@@ -220,6 +251,8 @@
   font-size: 13px;
 
   font-weight: 700;
+
+  white-space: nowrap;
 }
 
 
@@ -254,7 +287,8 @@
 
 
 .projects-table tbody tr {
-  transition: background-color 0.2s;
+  transition:
+    background-color 0.2s;
 }
 
 
@@ -273,6 +307,8 @@
   font-weight: 700;
 
   text-decoration: none;
+
+  transition: color 0.2s;
 }
 
 
@@ -306,24 +342,28 @@
 
 .status-in-progress {
   color: #047857;
+
   background-color: #ecfdf5;
 }
 
 
 .status-delayed {
   color: #dc2626;
+
   background-color: #fef2f2;
 }
 
 
 .status-review {
   color: #b45309;
+
   background-color: #fffbeb;
 }
 
 
 .status-completed {
   color: #047857;
+
   background-color: #ecfdf5;
 }
 
@@ -360,6 +400,7 @@
 
 .progress-track {
   width: 105px;
+
   height: 5px;
 
   overflow: hidden;
@@ -394,6 +435,113 @@
 
 .progress-completed {
   background-color: #10b981;
+}
+
+
+/* =========================
+   USER ROLE
+========================= */
+
+.project-user-role {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  min-width: 72px;
+
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  font-size: 10px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+.role-manager {
+  color: #1d4ed8;
+
+  background-color: #eff6ff;
+}
+
+
+.role-member {
+  color: #475569;
+
+  background-color: #f1f5f9;
+}
+
+
+/* =========================
+   ROW ACTIONS
+========================= */
+
+.project-row-actions {
+  display: flex;
+
+  align-items: center;
+
+  min-width: 90px;
+}
+
+
+.edit-project-button {
+  height: 34px;
+
+  padding: 0 10px;
+
+  border: 1px solid #bfdbfe;
+
+  border-radius: 7px;
+
+  background-color: #eff6ff;
+
+  color: #2563eb;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 6px;
+
+  font-family: inherit;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  text-decoration: none;
+
+  cursor: pointer;
+
+  transition: 0.2s;
+}
+
+
+.edit-project-button:hover {
+  border-color: #93c5fd;
+
+  background-color: #dbeafe;
+
+  color: #1d4ed8;
+}
+
+
+.project-no-edit {
+  color: #94a3b8;
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+  white-space: nowrap;
 }
 
 
@@ -436,7 +584,8 @@
   .projects-actions {
     width: 100%;
 
-    justify-content: space-between;
+    justify-content:
+      space-between;
   }
 
 
@@ -459,8 +608,16 @@
   }
 
 
+  .projects-list-info {
+    justify-content:
+      space-between;
+  }
+
+
   .status-filter {
     max-width: none;
+
+    width: 100%;
   }
 
 

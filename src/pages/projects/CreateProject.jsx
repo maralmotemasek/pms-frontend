@@ -1,27 +1,52 @@
-import { useRef, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  Controller,
+  useForm,
+} from "react-hook-form";
+
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import DatePickerModule from "react-multi-date-picker";
 
-const DatePicker =
-  DatePickerModule?.default ?? DatePickerModule;
-
 import persian from "react-date-object/calendars/persian";
+
 import persian_fa from "react-date-object/locales/persian_fa";
 
 import {
   ArrowRight,
+  CheckCircle2,
+  FileText,
   Save,
   UploadCloud,
-  FileText,
   X,
 } from "lucide-react";
+
+import {
+  currentUser,
+} from "../../data/projectMockData";
+
+import {
+  canCreateProject,
+} from "../../utils/projectPermissions";
 
 import "./CreateProject.css";
 
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const DatePicker =
+  DatePickerModule?.default ??
+  DatePickerModule;
+
+
+const MAX_FILE_SIZE =
+  10 * 1024 * 1024;
+
 
 const ALLOWED_EXTENSIONS = [
   ".pdf",
@@ -37,10 +62,15 @@ const ALLOWED_EXTENSIONS = [
 
 
 function isAllowedFile(file) {
-  const fileName = file.name.toLowerCase();
+  const fileName =
+    file.name.toLowerCase();
 
-  return ALLOWED_EXTENSIONS.some((extension) =>
-    fileName.endsWith(extension)
+
+  return ALLOWED_EXTENSIONS.some(
+    (extension) =>
+      fileName.endsWith(
+        extension
+      )
   );
 }
 
@@ -50,22 +80,59 @@ function formatFileSize(size) {
     return `${size} B`;
   }
 
-  if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(1)} KB`;
+
+  if (
+    size <
+    1024 * 1024
+  ) {
+    return `${(
+      size / 1024
+    ).toFixed(1)} KB`;
   }
 
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+
+  return `${(
+    size /
+    (1024 * 1024)
+  ).toFixed(1)} MB`;
 }
 
 
 function CreateProject() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const fileInputRef = useRef(null);
 
-  const [documents, setDocuments] = useState([]);
-  const [fileError, setFileError] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef =
+    useRef(null);
+
+
+  const successTimerRef =
+    useRef(null);
+
+
+  const [
+    documents,
+    setDocuments,
+  ] = useState([]);
+
+
+  const [
+    fileError,
+    setFileError,
+  ] = useState("");
+
+
+  const [
+    isDragging,
+    setIsDragging,
+  ] = useState(false);
+
+
+  const [
+    successMessage,
+    setSuccessMessage,
+  ] = useState("");
 
 
   const {
@@ -74,12 +141,15 @@ function CreateProject() {
     handleSubmit,
     watch,
     getValues,
-    formState: { errors },
+
+    formState: {
+      errors,
+      isSubmitting,
+    },
   } = useForm({
     defaultValues: {
       title: "",
       description: "",
-      manager: "",
       budget: "",
       startDate: null,
       endDate: null,
@@ -87,164 +157,284 @@ function CreateProject() {
   });
 
 
-  const startDate = watch("startDate");
+  const startDate =
+    watch("startDate");
 
 
-  const handleFiles = (fileList) => {
-    const selectedFiles = Array.from(fileList || []);
+  useEffect(() => {
+    return () => {
+      if (
+        successTimerRef.current
+      ) {
+        clearTimeout(
+          successTimerRef.current
+        );
+      }
+    };
+  }, []);
 
-    if (!selectedFiles.length) {
+
+  const handleFiles = (
+    fileList
+  ) => {
+    const selectedFiles =
+      Array.from(
+        fileList || []
+      );
+
+
+    if (
+      selectedFiles.length ===
+      0
+    ) {
       return;
     }
 
 
     const validFiles = [];
+
     const errorMessages = [];
 
 
-    selectedFiles.forEach((file) => {
+    selectedFiles.forEach(
+      (file) => {
 
-      if (!isAllowedFile(file)) {
-        errorMessages.push(
-          `فرمت فایل «${file.name}» مجاز نیست.`
-        );
+        if (
+          !isAllowedFile(file)
+        ) {
+          errorMessages.push(
+            `فرمت فایل «${file.name}» مجاز نیست.`
+          );
 
-        return;
+          return;
+        }
+
+
+        if (
+          file.size >
+          MAX_FILE_SIZE
+        ) {
+          errorMessages.push(
+            `حجم فایل «${file.name}» بیشتر از ۱۰ مگابایت است.`
+          );
+
+          return;
+        }
+
+
+        validFiles.push(file);
       }
+    );
 
 
-      if (file.size > MAX_FILE_SIZE) {
-        errorMessages.push(
-          `حجم فایل «${file.name}» بیشتر از ۱۰ مگابایت است.`
-        );
+    setDocuments(
+      (
+        previousDocuments
+      ) => {
 
-        return;
+        const existingFiles =
+          new Set(
+            previousDocuments.map(
+              (file) =>
+                `${file.name}-${file.size}-${file.lastModified}`
+            )
+          );
+
+
+        const newFiles =
+          validFiles.filter(
+            (file) =>
+              !existingFiles.has(
+                `${file.name}-${file.size}-${file.lastModified}`
+              )
+          );
+
+
+        return [
+          ...previousDocuments,
+          ...newFiles,
+        ];
       }
+    );
 
 
-      validFiles.push(file);
-    });
-
-
-    setDocuments((previousDocuments) => {
-
-      const existingFiles = new Set(
-        previousDocuments.map(
-          (file) =>
-            `${file.name}-${file.size}-${file.lastModified}`
-        )
-      );
-
-
-      const newFiles = validFiles.filter(
-        (file) =>
-          !existingFiles.has(
-            `${file.name}-${file.size}-${file.lastModified}`
-          )
-      );
-
-
-      return [
-        ...previousDocuments,
-        ...newFiles,
-      ];
-    });
-
-
-    setFileError(errorMessages.join(" "));
-  };
-
-
-  const handleFileInputChange = (event) => {
-    handleFiles(event.target.files);
-
-    event.target.value = "";
-  };
-
-
-  const handleDrop = (event) => {
-    event.preventDefault();
-
-    setIsDragging(false);
-
-    handleFiles(event.dataTransfer.files);
-  };
-
-
-  const handleDragOver = (event) => {
-    event.preventDefault();
-
-    setIsDragging(true);
-  };
-
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-
-  const removeDocument = (indexToRemove) => {
-    setDocuments((previousDocuments) =>
-      previousDocuments.filter(
-        (_, index) => index !== indexToRemove
-      )
+    setFileError(
+      errorMessages.join(" ")
     );
   };
 
 
-  const onSubmit = (data) => {
+  const removeDocument = (
+    indexToRemove
+  ) => {
+    setDocuments(
+      (
+        previousDocuments
+      ) =>
+        previousDocuments.filter(
+          (_, index) =>
+            index !==
+            indexToRemove
+        )
+    );
+  };
 
+
+  const showSuccessMessage =
+    () => {
+
+      setSuccessMessage(
+        "پروژه با موفقیت ایجاد شد."
+      );
+
+
+      if (
+        successTimerRef.current
+      ) {
+        clearTimeout(
+          successTimerRef.current
+        );
+      }
+
+
+      successTimerRef.current =
+        setTimeout(() => {
+          setSuccessMessage("");
+        }, 5000);
+    };
+
+
+  const onSubmit = async (
+    data
+  ) => {
     const projectData = {
-      ...data,
+      title:
+        data.title,
+
+      description:
+        data.description,
+
+      budget:
+        data.budget,
 
       startDate:
-        data.startDate?.format?.("YYYY/MM/DD") || null,
+        data.startDate
+          ?.format?.(
+            "YYYY/MM/DD"
+          ) || null,
 
       endDate:
-        data.endDate?.format?.("YYYY/MM/DD") || null,
+        data.endDate
+          ?.format?.(
+            "YYYY/MM/DD"
+          ) || null,
 
-      documents: documents.map((file) => ({
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      })),
+      documents:
+        documents.map(
+          (file) => ({
+            name:
+              file.name,
+
+            size:
+              file.size,
+
+            type:
+              file.type,
+          })
+        ),
     };
 
 
     console.log(
-      "Create project:",
+      "Create Project:",
       projectData
     );
 
 
     /*
-      بعداً وقتی API آماده شد:
+      فعلاً Mock است.
 
-      1. اطلاعات پروژه برای Backend ارسال می‌شود.
-      2. پروژه ساخته می‌شود.
-      3. فایل‌ها با API آپلود مستندات ارسال می‌شوند.
-      4. کاربر وارد Project Details می‌شود.
+      بعداً وقتی Backend Project API آماده شد:
+
+      POST /projects
+
+      نکته مهم:
+      اینجا هیچ PROJECT_MANAGER
+      انتخاب نمی‌کنیم.
+
+      مدیریت ProjectMember و Role
+      در بخش Members انجام خواهد شد.
     */
+
+
+    showSuccessMessage();
   };
+
+
+  /*
+    فعلاً فقط OWNER
+    طبق مستند صریحاً
+    Create Project دارد.
+  */
+  if (
+    !canCreateProject(
+      currentUser
+    )
+  ) {
+    return (
+      <section className="create-project-page">
+
+        <div className="create-project-card">
+
+          <h2>
+            دسترسی غیرمجاز
+          </h2>
+
+          <p>
+            شما اجازه ایجاد پروژه جدید را ندارید.
+          </p>
+
+
+          <button
+            type="button"
+            className="back-projects-button"
+            onClick={() =>
+              navigate("/projects")
+            }
+          >
+            <ArrowRight
+              size={18}
+            />
+
+            بازگشت به پروژه‌ها
+          </button>
+
+        </div>
+
+      </section>
+    );
+  }
 
 
   return (
     <section className="create-project-page">
 
-      {/* =========================
-          PAGE HEADER
-      ========================== */}
+      {/* =====================
+          HEADER
+      ====================== */}
 
       <div className="create-project-header">
 
         <div>
+
           <h2>
             ایجاد پروژه جدید
           </h2>
 
           <p>
-            اطلاعات مورد نیاز برای ایجاد پروژه را وارد کنید.
+            اطلاعات اولیه پروژه را وارد کنید.
           </p>
+
         </div>
 
 
@@ -255,7 +445,9 @@ function CreateProject() {
             navigate("/projects")
           }
         >
-          <ArrowRight size={18} />
+          <ArrowRight
+            size={18}
+          />
 
           بازگشت به پروژه‌ها
         </button>
@@ -263,20 +455,21 @@ function CreateProject() {
       </div>
 
 
-      {/* =========================
-          FORM CARD
-      ========================== */}
+      {/* =====================
+          FORM
+      ====================== */}
 
       <div className="create-project-card">
 
         <form
           className="create-project-form"
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={handleSubmit(
+            onSubmit
+          )}
+          noValidate
         >
 
-          {/* =========================
-              TITLE
-          ========================== */}
+          {/* TITLE */}
 
           <div className="project-form-group project-form-full">
 
@@ -289,34 +482,38 @@ function CreateProject() {
             <input
               type="text"
               placeholder="مثلاً طراحی سایت شرکت"
-              {...register("title", {
+              {...register(
+                "title",
+                {
+                  required:
+                    "عنوان پروژه الزامی است",
 
-                required:
-                  "عنوان پروژه الزامی است",
+                  minLength: {
+                    value: 3,
 
-                minLength: {
-                  value: 3,
-
-                  message:
-                    "عنوان پروژه حداقل باید ۳ کاراکتر باشد",
-                },
-
-              })}
+                    message:
+                      "عنوان پروژه حداقل باید ۳ کاراکتر باشد",
+                  },
+                }
+              )}
             />
 
 
             {errors.title && (
+
               <small className="project-form-error">
-                {errors.title.message}
+                {
+                  errors.title
+                    .message
+                }
               </small>
+
             )}
 
           </div>
 
 
-          {/* =========================
-              DESCRIPTION
-          ========================== */}
+          {/* DESCRIPTION */}
 
           <div className="project-form-group project-form-full">
 
@@ -328,74 +525,17 @@ function CreateProject() {
             <textarea
               rows="5"
               placeholder="توضیح کوتاهی درباره اهداف و جزئیات پروژه وارد کنید..."
-              {...register("description")}
+              {...register(
+                "description"
+              )}
             />
 
           </div>
 
 
-          {/* =========================
-              MANAGER
-          ========================== */}
+          {/* BUDGET */}
 
-          <div className="project-form-group">
-
-            <label>
-              مدیر پروژه
-              <span>*</span>
-            </label>
-
-
-            <select
-              defaultValue=""
-              {...register("manager", {
-
-                required:
-                  "انتخاب مدیر پروژه الزامی است",
-
-              })}
-            >
-
-              <option
-                value=""
-                disabled
-              >
-                مدیر پروژه را انتخاب کنید
-              </option>
-
-              <option value="1">
-                علیرضا نوری
-              </option>
-
-              <option value="2">
-                سهراب سپهری
-              </option>
-
-              <option value="3">
-                رویا رضایی
-              </option>
-
-              <option value="4">
-                آرش کمالگیر
-              </option>
-
-            </select>
-
-
-            {errors.manager && (
-              <small className="project-form-error">
-                {errors.manager.message}
-              </small>
-            )}
-
-          </div>
-
-
-          {/* =========================
-              BUDGET
-          ========================== */}
-
-          <div className="project-form-group">
+          <div className="project-form-group project-form-full">
 
             <label>
               بودجه پروژه
@@ -406,31 +546,35 @@ function CreateProject() {
               type="number"
               min="0"
               placeholder="مثلاً 500000000"
-              {...register("budget", {
+              {...register(
+                "budget",
+                {
+                  min: {
+                    value: 0,
 
-                min: {
-                  value: 0,
-
-                  message:
-                    "بودجه نمی‌تواند منفی باشد",
-                },
-
-              })}
+                    message:
+                      "بودجه نمی‌تواند منفی باشد",
+                  },
+                }
+              )}
             />
 
 
             {errors.budget && (
+
               <small className="project-form-error">
-                {errors.budget.message}
+                {
+                  errors.budget
+                    .message
+                }
               </small>
+
             )}
 
           </div>
 
 
-          {/* =========================
-              START DATE - PERSIAN
-          ========================== */}
+          {/* START DATE */}
 
           <div className="project-form-group">
 
@@ -447,23 +591,27 @@ function CreateProject() {
                 required:
                   "تاریخ شروع الزامی است",
               }}
-              render={({ field }) => (
+              render={({
+                field,
+              }) => (
 
                 <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-
-                  calendar={persian}
-                  locale={persian_fa}
-
+                  value={
+                    field.value
+                  }
+                  onChange={
+                    field.onChange
+                  }
+                  calendar={
+                    persian
+                  }
+                  locale={
+                    persian_fa
+                  }
                   format="YYYY/MM/DD"
-
                   calendarPosition="bottom-right"
-
                   inputClass="persian-date-input"
-
                   containerClassName="persian-date-container"
-
                   placeholder="تاریخ شروع را انتخاب کنید"
                 />
 
@@ -472,17 +620,20 @@ function CreateProject() {
 
 
             {errors.startDate && (
+
               <small className="project-form-error">
-                {errors.startDate.message}
+                {
+                  errors.startDate
+                    .message
+                }
               </small>
+
             )}
 
           </div>
 
 
-          {/* =========================
-              END DATE - PERSIAN
-          ========================== */}
+          {/* END DATE */}
 
           <div className="project-form-group">
 
@@ -495,16 +646,18 @@ function CreateProject() {
             <Controller
               name="endDate"
               control={control}
-
               rules={{
-
                 required:
                   "تاریخ پایان الزامی است",
 
-                validate: (value) => {
+                validate: (
+                  value
+                ) => {
 
                   const currentStartDate =
-                    getValues("startDate");
+                    getValues(
+                      "startDate"
+                    );
 
 
                   if (
@@ -515,47 +668,42 @@ function CreateProject() {
                   }
 
 
-                  const startTimestamp =
-                    currentStartDate
-                      .toDate()
-                      .getTime();
-
-
-                  const endTimestamp =
+                  return (
                     value
                       .toDate()
-                      .getTime();
-
-
-                  return (
-                    endTimestamp >= startTimestamp ||
+                      .getTime() >=
+                      currentStartDate
+                        .toDate()
+                        .getTime() ||
                     "تاریخ پایان نمی‌تواند قبل از تاریخ شروع باشد"
                   );
                 },
-
               }}
-
-              render={({ field }) => (
+              render={({
+                field,
+              }) => (
 
                 <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-
-                  calendar={persian}
-                  locale={persian_fa}
-
-                  format="YYYY/MM/DD"
-
-                  minDate={
-                    startDate || undefined
+                  value={
+                    field.value
                   }
-
+                  onChange={
+                    field.onChange
+                  }
+                  calendar={
+                    persian
+                  }
+                  locale={
+                    persian_fa
+                  }
+                  format="YYYY/MM/DD"
+                  minDate={
+                    startDate ||
+                    undefined
+                  }
                   calendarPosition="bottom-right"
-
                   inputClass="persian-date-input"
-
                   containerClassName="persian-date-container"
-
                   placeholder="تاریخ پایان را انتخاب کنید"
                 />
 
@@ -564,17 +712,20 @@ function CreateProject() {
 
 
             {errors.endDate && (
+
               <small className="project-form-error">
-                {errors.endDate.message}
+                {
+                  errors.endDate
+                    .message
+                }
               </small>
+
             )}
 
           </div>
 
 
-          {/* =========================
-              DOCUMENTS
-          ========================== */}
+          {/* DOCUMENTS */}
 
           <div className="project-form-group project-form-full">
 
@@ -589,32 +740,37 @@ function CreateProject() {
                   ? "documents-dropzone dragging"
                   : "documents-dropzone"
               }
-
               onClick={() =>
                 fileInputRef.current?.click()
               }
+              onDragOver={(
+                event
+              ) => {
+                event.preventDefault();
 
-              onDragOver={handleDragOver}
+                setIsDragging(
+                  true
+                );
+              }}
+              onDragLeave={() =>
+                setIsDragging(
+                  false
+                )
+              }
+              onDrop={(
+                event
+              ) => {
+                event.preventDefault();
 
-              onDragLeave={handleDragLeave}
+                setIsDragging(
+                  false
+                );
 
-              onDrop={handleDrop}
-
-              role="button"
-
-              tabIndex={0}
-
-              onKeyDown={(event) => {
-
-                if (
-                  event.key === "Enter" ||
-                  event.key === " "
-                ) {
-
-                  fileInputRef.current?.click();
-
-                }
-
+                handleFiles(
+                  event
+                    .dataTransfer
+                    .files
+                );
               }}
             >
 
@@ -625,47 +781,60 @@ function CreateProject() {
 
 
               <strong>
-                فایل‌ها را اینجا رها کنید
-                یا برای انتخاب کلیک کنید
+                فایل‌ها را اینجا رها کنید یا برای انتخاب کلیک کنید
               </strong>
 
 
               <span>
-                PDF، Word، Excel، تصویر یا ZIP
-                — حداکثر ۱۰ مگابایت برای هر فایل
+                PDF، Word، Excel، تصویر یا ZIP — حداکثر ۱۰ مگابایت
               </span>
 
 
               <input
-                ref={fileInputRef}
-
+                ref={
+                  fileInputRef
+                }
                 type="file"
-
                 multiple
-
                 className="documents-file-input"
-
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip"
+                onChange={(
+                  event
+                ) => {
 
-                onChange={handleFileInputChange}
+                  handleFiles(
+                    event.target
+                      .files
+                  );
+
+
+                  event.target.value =
+                    "";
+                }}
               />
 
             </div>
 
 
             {fileError && (
+
               <small className="project-form-error">
                 {fileError}
               </small>
+
             )}
 
 
-            {documents.length > 0 && (
+            {documents.length >
+              0 && (
 
               <div className="uploaded-documents">
 
                 {documents.map(
-                  (file, index) => (
+                  (
+                    file,
+                    index
+                  ) => (
 
                     <div
                       className="uploaded-document"
@@ -675,20 +844,30 @@ function CreateProject() {
                       <div className="uploaded-document-info">
 
                         <div className="uploaded-document-icon">
-                          <FileText size={19} />
+
+                          <FileText
+                            size={19}
+                          />
+
                         </div>
 
 
                         <div>
+
                           <strong>
-                            {file.name}
+                            {
+                              file.name
+                            }
                           </strong>
 
                           <span>
-                            {formatFileSize(
-                              file.size
-                            )}
+                            {
+                              formatFileSize(
+                                file.size
+                              )
+                            }
                           </span>
+
                         </div>
 
                       </div>
@@ -696,16 +875,16 @@ function CreateProject() {
 
                       <button
                         type="button"
-
                         className="remove-document-button"
-
                         onClick={() =>
-                          removeDocument(index)
+                          removeDocument(
+                            index
+                          )
                         }
-
-                        aria-label={`حذف ${file.name}`}
                       >
-                        <X size={17} />
+                        <X
+                          size={17}
+                        />
                       </button>
 
                     </div>
@@ -720,9 +899,28 @@ function CreateProject() {
           </div>
 
 
-          {/* =========================
-              ACTIONS
-          ========================== */}
+          {/* SUCCESS */}
+
+          {successMessage && (
+
+            <div className="create-project-success">
+
+              <CheckCircle2
+                size={19}
+              />
+
+              <span>
+                {
+                  successMessage
+                }
+              </span>
+
+            </div>
+
+          )}
+
+
+          {/* ACTIONS */}
 
           <div className="project-form-actions">
 
@@ -730,7 +928,9 @@ function CreateProject() {
               type="button"
               className="cancel-project-button"
               onClick={() =>
-                navigate("/projects")
+                navigate(
+                  "/projects"
+                )
               }
             >
               انصراف
@@ -740,8 +940,13 @@ function CreateProject() {
             <button
               type="submit"
               className="save-project-button"
+              disabled={
+                isSubmitting
+              }
             >
-              <Save size={18} />
+              <Save
+                size={18}
+              />
 
               ایجاد پروژه
             </button>

@@ -18,6 +18,8 @@ import CreateTask from "../pages/tasks/CreateTask";
 import TaskDetails from "../pages/tasks/TaskDetails";
 import EditTask from "../pages/tasks/EditTask";
 
+import UserProfile from "../pages/user/UserProfile";
+
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
 
@@ -27,13 +29,23 @@ function AppRoutes() {
 
       <Routes>
 
+        {/* =====================
+            DEFAULT
+        ====================== */}
+
         <Route
           path="/"
           element={
-            <Navigate to="/login" />
+            <Navigate
+              to="/login"
+            />
           }
         />
 
+
+        {/* =====================
+            AUTH
+        ====================== */}
 
         <Route
           path="/login"
@@ -47,7 +59,23 @@ function AppRoutes() {
         />
 
 
-        <Route element={<AppLayout />}>
+        {/* =====================
+            APP
+        ====================== */}
+
+        <Route
+          element={<AppLayout />}
+        >
+
+          {/* USER */}
+
+          <Route
+            path="/profile"
+            element={
+              <UserProfile />
+            }
+          />
+
 
           {/* PROJECTS */}
 
@@ -56,19 +84,28 @@ function AppRoutes() {
             element={<Projects />}
           />
 
+
           <Route
             path="/projects/create"
-            element={<CreateProject />}
+            element={
+              <CreateProject />
+            }
           />
+
 
           <Route
             path="/projects/:id"
-            element={<ProjectDetails />}
+            element={
+              <ProjectDetails />
+            }
           />
+
 
           <Route
             path="/projects/:id/edit"
-            element={<EditProject />}
+            element={
+              <EditProject />
+            }
           />
 
 
@@ -79,19 +116,28 @@ function AppRoutes() {
             element={<Tasks />}
           />
 
+
           <Route
             path="/tasks/create"
-            element={<CreateTask />}
+            element={
+              <CreateTask />
+            }
           />
+
 
           <Route
             path="/tasks/:id"
-            element={<TaskDetails />}
+            element={
+              <TaskDetails />
+            }
           />
+
 
           <Route
             path="/tasks/:id/edit"
-            element={<EditTask />}
+            element={
+              <EditTask />
+            }
           />
 
         </Route>
