@@ -17,6 +17,7 @@ import {
   Sparkles,
   LogOut,
   Box,
+  Gauge,
 } from "lucide-react";
 
 import {
@@ -139,6 +140,21 @@ function Sidebar() {
 
 
         <NavLink
+          to="/resources"
+          className={getLinkClass}
+        >
+          <Gauge
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            منابع
+          </span>
+        </NavLink>
+
+
+        <NavLink
           to="/tasks"
           className={getLinkClass}
         >
@@ -224,3 +240,4 @@ function Sidebar() {
 
 
 export default Sidebar;
+

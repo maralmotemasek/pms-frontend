@@ -23,6 +23,8 @@ import UserProfile from "../pages/user/UserProfile";
 import OrganizationPage from "../pages/organizations/OrganizationPage";
 import OrganizationDetails from "../pages/organizations/OrganizationDetails";
 
+import Resources from "../pages/resources/Resources";
+
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
 
@@ -85,6 +87,16 @@ function AppRoutes() {
             path="/organizations/:id"
             element={
               <OrganizationDetails />
+            }
+          />
+
+
+          {/* RESOURCES */}
+
+          <Route
+            path="/resources"
+            element={
+              <Resources />
             }
           />
 
@@ -156,4 +168,5 @@ function AppRoutes() {
 
 
 export default AppRoutes;
+
 
