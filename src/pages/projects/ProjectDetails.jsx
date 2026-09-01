@@ -1,3 +1,9 @@
+﻿import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import {
   Link,
   useNavigate,
@@ -6,70 +12,506 @@ import {
 
 import {
   ArrowRight,
+  Building2,
   CalendarDays,
   CircleDollarSign,
-  ClipboardList,
-  FileText,
   Pencil,
+  Search,
+  Trash2,
+  UserPlus,
   UserRound,
   Users,
 } from "lucide-react";
 
 import {
-  currentUser,
-  mockProjects,
-} from "../../data/projectMockData";
+  getCurrentUser,
+} from "../../services/authService";
 
 import {
-  canEditProject,
-  canViewProject,
-  getProjectManager,
+  getMyOrganizations,
+} from "../../services/organizationService";
+
+import {
+  loadOrganizationMembers,
+} from "../../data/organizationUiMockData";
+
+import {
   getProjectMembership,
-  getProjectRoleLabel,
-} from "../../utils/projectPermissions";
+  getProjectManagers,
+  getWorkspaceProjectById,
+  normalizeProjectRole,
+  updateWorkspaceProject,
+} from "../../data/projectWorkspaceStore";
+
+import {
+  PROJECT_ROLES,
+  PROJECT_ROLE_LABELS,
+} from "../../constants/roles";
+
+import {
+  canManageWorkspaceProject,
+  canViewWorkspaceProject,
+  getProjectOrganization,
+  getProjectOrganizationRole,
+} from "../../utils/projectAccess";
 
 import "./ProjectDetails.css";
+
+
+const STATUS_LABELS = {
+  "in-progress":
+    "در حال انجام",
+
+  delayed:
+    "با تأخیر",
+
+  review:
+    "در انتظار تأیید",
+
+  completed:
+    "تکمیل شده",
+};
 
 
 function ProjectDetails() {
   const navigate =
     useNavigate();
 
-  const { id } =
-    useParams();
+  const {
+    id,
+  } = useParams();
 
 
-  const project =
-    mockProjects.find(
-      (item) =>
-        String(item.id) ===
-        String(id)
+  const [
+    project,
+    setProject,
+  ] = useState(null);
+
+
+  const [
+    currentUser,
+    setCurrentUser,
+  ] = useState(null);
+
+
+  const [
+    organizations,
+    setOrganizations,
+  ] = useState([]);
+
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  const [
+    memberSearch,
+    setMemberSearch,
+  ] = useState("");
+
+
+  useEffect(() => {
+    const loadPage =
+      async () => {
+
+        setLoading(true);
+        setError("");
+
+
+        try {
+          const [
+            user,
+            organizationList,
+          ] =
+            await Promise.all([
+              getCurrentUser(),
+              getMyOrganizations(),
+            ]);
+
+
+          const loadedProject =
+            getWorkspaceProjectById(
+              id
+            );
+
+
+          if (!loadedProject) {
+            setError(
+              "پروژه موردنظر پیدا نشد."
+            );
+
+            return;
+          }
+
+
+          const safeOrganizations =
+            Array.isArray(
+              organizationList
+            )
+              ? organizationList
+              : [];
+
+
+          if (
+            !canViewWorkspaceProject(
+              user,
+              loadedProject,
+              safeOrganizations
+            )
+          ) {
+            setError(
+              "شما به این پروژه دسترسی ندارید."
+            );
+
+            return;
+          }
+
+
+          setCurrentUser(
+            user
+          );
+
+          setOrganizations(
+            safeOrganizations
+          );
+
+          setProject(
+            loadedProject
+          );
+        } catch (requestError) {
+          console.error(
+            "Load project details error:",
+            requestError
+          );
+
+          setError(
+            "دریافت اطلاعات پروژه با خطا مواجه شد."
+          );
+        } finally {
+          setLoading(false);
+        }
+      };
+
+
+    loadPage();
+  }, [id]);
+
+
+  const organization =
+    useMemo(
+      () =>
+        getProjectOrganization(
+          project,
+          organizations
+        ),
+      [
+        project,
+        organizations,
+      ]
     );
 
 
+  const organizationMembers =
+    useMemo(
+      () => {
+
+        if (
+          !organization ||
+          !currentUser
+        ) {
+          return [];
+        }
+
+
+        return loadOrganizationMembers(
+          organization,
+          currentUser
+        );
+      },
+      [
+        organization,
+        currentUser,
+      ]
+    );
+
+
+  const canManage =
+    project &&
+    currentUser
+      ? canManageWorkspaceProject(
+          currentUser,
+          project,
+          organizations
+        )
+      : false;
+
+
+  const currentMembership =
+    project &&
+    currentUser
+      ? getProjectMembership(
+          project,
+          currentUser.id
+        )
+      : null;
+
+
+  const organizationRole =
+    project &&
+    currentUser
+      ? getProjectOrganizationRole(
+          project,
+          currentUser,
+          organizations
+        )
+      : null;
+
+
+  const managers =
+    project
+      ? getProjectManagers(
+          project
+        )
+      : [];
+
+
+  const availableMembers =
+    useMemo(
+      () => {
+
+        if (!project) {
+          return [];
+        }
+
+
+        const selectedIds =
+          new Set(
+            project.members.map(
+              (member) =>
+                Number(
+                  member.userId
+                )
+            )
+          );
+
+
+        const query =
+          memberSearch
+            .trim()
+            .toLowerCase();
+
+
+        return organizationMembers.filter(
+          (member) => {
+
+            if (
+              selectedIds.has(
+                Number(
+                  member.user_id
+                )
+              )
+            ) {
+              return false;
+            }
+
+
+            if (!query) {
+              return true;
+            }
+
+
+            return (
+              member.username
+                ?.toLowerCase()
+                .includes(query) ||
+              member.full_name
+                ?.toLowerCase()
+                .includes(query)
+            );
+          }
+        );
+      },
+      [
+        organizationMembers,
+        project,
+        memberSearch,
+      ]
+    );
+
+
+  const saveMembers =
+    (
+      nextMembers
+    ) => {
+
+      if (
+        !canManage ||
+        !project
+      ) {
+        return;
+      }
+
+
+      const updated =
+        updateWorkspaceProject(
+          project.id,
+          {
+            members:
+              nextMembers,
+          }
+        );
+
+
+      if (updated) {
+        setProject(
+          updated
+        );
+      }
+    };
+
+
+  const addProjectMember =
+    (member) => {
+
+      if (
+        !project ||
+        !canManage
+      ) {
+        return;
+      }
+
+
+      saveMembers([
+        ...project.members,
+
+        {
+          userId:
+            member.user_id,
+
+          fullName:
+            member.full_name ||
+            member.username,
+
+          username:
+            member.username ||
+            "",
+
+          role:
+            PROJECT_ROLES.PR_MEMBER,
+        },
+      ]);
+
+
+      setMemberSearch("");
+    };
+
+
+  const changeMemberRole =
+    (
+      userId,
+      role
+    ) => {
+
+      if (
+        !project ||
+        !canManage
+      ) {
+        return;
+      }
+
+
+      const nextMembers =
+        project.members.map(
+          (member) =>
+            Number(
+              member.userId
+            ) ===
+            Number(userId)
+              ? {
+                  ...member,
+                  role,
+                }
+              : member
+        );
+
+
+      saveMembers(
+        nextMembers
+      );
+    };
+
+
+  const removeProjectMember =
+    (userId) => {
+
+      if (
+        !project ||
+        !canManage
+      ) {
+        return;
+      }
+
+
+      const nextMembers =
+        project.members.filter(
+          (member) =>
+            Number(
+              member.userId
+            ) !==
+            Number(userId)
+        );
+
+
+      saveMembers(
+        nextMembers
+      );
+    };
+
+
+  if (loading) {
+    return (
+      <section className="project-details-page">
+
+        <div className="project-details-state">
+          در حال دریافت اطلاعات پروژه...
+        </div>
+
+      </section>
+    );
+  }
+
+
   if (
-    !project ||
-    !canViewProject(
-      currentUser,
-      project
-    )
+    error ||
+    !project
   ) {
     return (
       <section className="project-details-page">
 
-        <div className="project-not-found">
+        <div className="project-details-state">
 
           <h2>
             پروژه در دسترس نیست
           </h2>
 
           <p>
-            این پروژه وجود ندارد یا شما عضو آن نیستید.
+            {error}
           </p>
 
           <button
+            type="button"
             onClick={() =>
-              navigate("/projects")
+              navigate(
+                "/projects"
+              )
             }
           >
             بازگشت به پروژه‌ها
@@ -82,24 +524,20 @@ function ProjectDetails() {
   }
 
 
-  const membership =
-    getProjectMembership(
-      project,
-      currentUser.id
-    );
-
-
-  const manager =
-    getProjectManager(
-      project
-    );
-
-
-  const canEdit =
-    canEditProject(
-      currentUser,
-      project
-    );
+  const currentRoleLabel =
+    currentMembership
+      ? PROJECT_ROLE_LABELS[
+          normalizeProjectRole(
+            currentMembership.role
+          )
+        ]
+      : organizationRole ===
+        "OWNER"
+        ? "مالک سازمان"
+        : organizationRole ===
+          "ADMIN"
+          ? "مدیر سازمان"
+          : "عضو پروژه";
 
 
   return (
@@ -113,58 +551,62 @@ function ProjectDetails() {
             type="button"
             className="project-details-back"
             onClick={() =>
-              navigate("/projects")
+              navigate(
+                "/projects"
+              )
             }
           >
-            <ArrowRight size={17} />
+            <ArrowRight
+              size={17}
+            />
 
             بازگشت به پروژه‌ها
           </button>
 
 
-          <h2>
-            {project.title}
-          </h2>
+          <div className="project-details-title-row">
+
+            <div>
+              <h2>
+                {project.title}
+              </h2>
+
+              <div className="project-details-meta">
+
+                <span
+                  className={`project-details-status status-${project.status}`}
+                >
+                  {STATUS_LABELS[
+                    project.status
+                  ] ||
+                    "در حال انجام"}
+                </span>
 
 
-          <div className="project-details-header-meta">
+                <span className="project-details-role">
+                  {currentRoleLabel}
+                </span>
 
-            <span
-              className={`project-details-status status-${project.status}`}
-            >
-              {project.statusLabel}
-            </span>
+              </div>
 
-
-            <span
-              className={
-                membership?.role ===
-                "PROJECT_MANAGER"
-                  ? "details-role-badge manager-role"
-                  : "details-role-badge member-role"
-              }
-            >
-              {getProjectRoleLabel(
-                membership?.role
-              )}
-            </span>
+            </div>
 
           </div>
 
         </div>
 
 
-        {canEdit && (
-
+        {canManage && (
           <Link
             to={`/projects/${project.id}/edit`}
             className="project-details-edit-button"
           >
-            <Pencil size={17} />
+            <Pencil
+              size={17}
+            />
 
             ویرایش پروژه
           </Link>
-
         )}
 
       </div>
@@ -175,7 +617,32 @@ function ProjectDetails() {
         <div className="project-summary-card">
 
           <div className="summary-icon">
-            <UserRound size={20} />
+            <Building2
+              size={20}
+            />
+          </div>
+
+          <div>
+            <span>
+              سازمان
+            </span>
+
+            <strong>
+              {project.organizationName ||
+                organization?.name ||
+                "-"}
+            </strong>
+          </div>
+
+        </div>
+
+
+        <div className="project-summary-card">
+
+          <div className="summary-icon">
+            <UserRound
+              size={20}
+            />
           </div>
 
           <div>
@@ -184,8 +651,14 @@ function ProjectDetails() {
             </span>
 
             <strong>
-              {manager?.fullName ||
-                "تعیین نشده"}
+              {managers.length > 0
+                ? managers
+                    .map(
+                      (manager) =>
+                        manager.fullName
+                    )
+                    .join("، ")
+                : "تعیین نشده"}
             </strong>
           </div>
 
@@ -195,35 +668,24 @@ function ProjectDetails() {
         <div className="project-summary-card">
 
           <div className="summary-icon">
-            <CalendarDays size={20} />
+            <CalendarDays
+              size={20}
+            />
           </div>
 
           <div>
             <span>
-              تاریخ شروع
+              بازه پروژه
             </span>
 
             <strong>
-              {project.startDate}
-            </strong>
-          </div>
-
-        </div>
-
-
-        <div className="project-summary-card">
-
-          <div className="summary-icon">
-            <CalendarDays size={20} />
-          </div>
-
-          <div>
-            <span>
-              تاریخ پایان
-            </span>
-
-            <strong>
-              {project.endDate}
+              {project.startDate ||
+                "-"}
+              {" "}
+              تا
+              {" "}
+              {project.endDate ||
+                "-"}
             </strong>
           </div>
 
@@ -245,10 +707,12 @@ function ProjectDetails() {
 
             <strong>
               {Number(
-                project.budget
+                project.budget ||
+                0
               ).toLocaleString(
                 "fa-IR"
-              )}{" "}
+              )}
+              {" "}
               تومان
             </strong>
           </div>
@@ -265,7 +729,9 @@ function ProjectDetails() {
           <div className="details-card-title">
 
             <div>
-              <FileText size={19} />
+              <Building2
+                size={19}
+              />
 
               <h3>
                 درباره پروژه
@@ -276,7 +742,8 @@ function ProjectDetails() {
 
 
           <p className="project-description">
-            {project.description}
+            {project.description ||
+              "توضیحی برای این پروژه ثبت نشده است."}
           </p>
 
         </div>
@@ -287,7 +754,7 @@ function ProjectDetails() {
           <div className="details-card-title">
 
             <div>
-              <ClipboardList
+              <CalendarDays
                 size={19}
               />
 
@@ -308,7 +775,8 @@ function ProjectDetails() {
               </span>
 
               <strong>
-                {project.progress}%
+                {project.progress}
+                %
               </strong>
 
             </div>
@@ -317,7 +785,7 @@ function ProjectDetails() {
             <div className="details-progress-track">
 
               <div
-                className={`details-progress-fill progress-${project.status}`}
+                className="details-progress-fill"
                 style={{
                   width:
                     `${project.progress}%`,
@@ -333,197 +801,268 @@ function ProjectDetails() {
       </div>
 
 
-      {/* MEMBERS */}
-
-      <div className="project-details-card">
+      <div className="project-details-card project-members-card">
 
         <div className="details-card-title">
 
           <div>
-            <Users size={19} />
+            <Users
+              size={19}
+            />
 
             <h3>
               اعضای پروژه
             </h3>
           </div>
 
+
           <span className="details-count">
-            {
-              project.members
-                .length
-            }{" "}
-            نفر
+            {project.members.length}
+            {" "}
+            عضو
           </span>
 
         </div>
 
 
-        <div className="project-members-list">
+        {project.members.length ===
+        0 ? (
+          <div className="details-empty-state">
+            هنوز عضوی برای این پروژه تعیین نشده است.
+          </div>
+        ) : (
+          <div className="project-members-grid">
 
-          {project.members.map(
-            (member) => (
+            {project.members.map(
+              (member) => {
 
-              <div
-                className="project-member-item"
-                key={member.userId}
-              >
-
-                <div className="project-member-avatar">
-
-                  <UserRound
-                    size={18}
-                  />
-
-                </div>
+                const role =
+                  normalizeProjectRole(
+                    member.role
+                  );
 
 
-                <div className="project-member-info">
-
-                  <strong>
-                    {
-                      member.fullName
+                return (
+                  <article
+                    className="project-member-card"
+                    key={
+                      member.userId
                     }
-                  </strong>
+                  >
 
-                  <span>
-                    {getProjectRoleLabel(
-                      member.role
+                    <div className="project-member-main">
+
+                      <div className="project-member-avatar">
+
+                        <UserRound
+                          size={19}
+                        />
+
+                      </div>
+
+
+                      <div className="project-member-info">
+
+                        <strong>
+                          {member.fullName}
+                        </strong>
+
+                        <span>
+                          {member.username
+                            ? `@${member.username}`
+                            : PROJECT_ROLE_LABELS[
+                                role
+                              ]}
+                        </span>
+
+                      </div>
+
+                    </div>
+
+
+                    {canManage ? (
+                      <div className="project-member-actions">
+
+                        <select
+                          value={
+                            role
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            changeMemberRole(
+                              member.userId,
+                              event.target
+                                .value
+                            )
+                          }
+                        >
+
+                          {Object.values(
+                            PROJECT_ROLES
+                          ).map(
+                            (
+                              projectRole
+                            ) => (
+                              <option
+                                key={
+                                  projectRole
+                                }
+                                value={
+                                  projectRole
+                                }
+                              >
+                                {
+                                  PROJECT_ROLE_LABELS[
+                                    projectRole
+                                  ]
+                                }
+                              </option>
+                            )
+                          )}
+
+                        </select>
+
+
+                        <button
+                          type="button"
+                          className="project-member-remove"
+                          onClick={() =>
+                            removeProjectMember(
+                              member.userId
+                            )
+                          }
+                          aria-label="حذف عضو از پروژه"
+                        >
+                          <Trash2
+                            size={16}
+                          />
+                        </button>
+
+                      </div>
+                    ) : (
+                      <span
+                        className={`project-member-role role-${role.toLowerCase()}`}
+                      >
+                        {
+                          PROJECT_ROLE_LABELS[
+                            role
+                          ]
+                        }
+                      </span>
                     )}
-                  </span>
 
-                </div>
-
-              </div>
-
-            )
-          )}
-
-        </div>
-
-      </div>
-
-
-      {/* TASKS */}
-
-      <div className="project-details-card">
-
-        <div className="details-card-title">
-
-          <div>
-            <ClipboardList
-              size={19}
-            />
-
-            <h3>
-              تسک‌های پروژه
-            </h3>
-          </div>
-
-
-          <Link
-            to="/tasks"
-            className="details-view-all"
-          >
-            مشاهده همه تسک‌ها
-          </Link>
-
-        </div>
-
-
-        <div className="project-tasks-list">
-
-          {project.tasks.map(
-            (task) => (
-
-              <div
-                className="project-task-item"
-                key={task.id}
-              >
-
-                <div>
-
-                  <span className="task-point" />
-
-                  <strong>
-                    {task.title}
-                  </strong>
-
-                </div>
-
-
-                <span className="task-status-text">
-                  {task.status}
-                </span>
-
-              </div>
-
-            )
-          )}
-
-        </div>
-
-      </div>
-
-
-      {/* DOCUMENTS */}
-
-      <div className="project-details-card">
-
-        <div className="details-card-title">
-
-          <div>
-            <FileText size={19} />
-
-            <h3>
-              مستندات پروژه
-            </h3>
-          </div>
-
-        </div>
-
-
-        {project.documents
-          .length > 0 ? (
-
-          <div className="project-documents-list">
-
-            {project.documents.map(
-              (document) => (
-
-                <div
-                  className="project-document-item"
-                  key={
-                    document.id
-                  }
-                >
-
-                  <div className="project-document-icon">
-
-                    <FileText
-                      size={18}
-                    />
-
-                  </div>
-
-                  <span>
-                    {
-                      document.name
-                    }
-                  </span>
-
-                </div>
-
-              )
+                  </article>
+                );
+              }
             )}
 
           </div>
+        )}
 
-        ) : (
 
-          <div className="details-empty-state">
-            مستندی برای این پروژه ثبت نشده است.
+        {canManage && (
+          <div className="project-add-member-section">
+
+            <div className="project-add-member-header">
+
+              <div>
+
+                <h4>
+                  افزودن عضو سازمان به پروژه
+                </h4>
+
+                <p>
+                  فقط مالک و مدیر سازمان می‌توانند اعضا و نقش‌های پروژه را مدیریت کنند.
+                </p>
+
+              </div>
+
+              <UserPlus
+                size={20}
+              />
+
+            </div>
+
+
+            <div className="project-member-search">
+
+              <Search
+                size={17}
+              />
+
+              <input
+                type="text"
+                value={
+                  memberSearch
+                }
+                onChange={(
+                  event
+                ) =>
+                  setMemberSearch(
+                    event.target.value
+                  )
+                }
+                placeholder="جستجوی عضو سازمان..."
+              />
+
+            </div>
+
+
+            <div className="project-available-members">
+
+              {availableMembers.length ===
+              0 ? (
+                <div className="details-empty-state small">
+                  عضو دیگری برای افزودن وجود ندارد.
+                </div>
+              ) : (
+                availableMembers.map(
+                  (member) => (
+                    <div
+                      className="project-available-member"
+                      key={
+                        member.user_id
+                      }
+                    >
+
+                      <div>
+
+                        <strong>
+                          {member.full_name ||
+                            member.username}
+                        </strong>
+
+                        <span>
+                          @{member.username}
+                        </span>
+
+                      </div>
+
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          addProjectMember(
+                            member
+                          )
+                        }
+                      >
+                        <UserPlus
+                          size={15}
+                        />
+
+                        افزودن
+                      </button>
+
+                    </div>
+                  )
+                )
+              )}
+
+            </div>
+
           </div>
-
         )}
 
       </div>

@@ -1,4 +1,6 @@
-import {
+﻿import {
+  useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -7,397 +9,681 @@ import {
 } from "react-router-dom";
 
 import {
-  Download,
+  Building2,
   Filter,
   Pencil,
   Plus,
+  Search,
 } from "lucide-react";
 
 import {
-  currentUser,
-  mockProjects,
-  PROJECT_ROLES,
-} from "../../data/projectMockData";
+  getCurrentUser,
+} from "../../services/authService";
 
 import {
-  canCreateProject,
-  canEditProject,
-  canViewProject,
-  getProjectManager,
+  getMyOrganizations,
+} from "../../services/organizationService";
+
+import {
+  getProjectManagers,
   getProjectMembership,
+  getWorkspaceProjects,
+  normalizeProjectRole,
+} from "../../data/projectWorkspaceStore";
+
+import {
+  PROJECT_ROLES,
+} from "../../constants/roles";
+
+import {
+  canCreateProjectFromOrganizations,
+  canManageWorkspaceProject,
+  canViewWorkspaceProject,
+  getProjectOrganizationRole,
   getProjectRoleLabel,
-} from "../../utils/projectPermissions";
+} from "../../utils/projectAccess";
 
 import "./Projects.css";
 
 
+const STATUS_OPTIONS = {
+  all: "همه وضعیت‌ها",
+
+  "in-progress":
+    "در حال انجام",
+
+  delayed:
+    "با تأخیر",
+
+  review:
+    "در انتظار تأیید",
+
+  completed:
+    "تکمیل شده",
+};
+
+
 function Projects() {
+  const [
+    currentUser,
+    setCurrentUser,
+  ] = useState(null);
+
+
+  const [
+    organizations,
+    setOrganizations,
+  ] = useState([]);
+
+
+  const [
+    projects,
+    setProjects,
+  ] = useState([]);
+
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+
   const [
     statusFilter,
     setStatusFilter,
   ] = useState("all");
 
 
-  /*
-    فقط پروژه‌هایی که User
-    در آنها ProjectMember است.
-  */
-  const userProjects =
-    mockProjects.filter(
-      (project) =>
-        canViewProject(
-          currentUser,
-          project
-        )
+  const [
+    organizationFilter,
+    setOrganizationFilter,
+  ] = useState("all");
+
+
+  const [
+    searchValue,
+    setSearchValue,
+  ] = useState("");
+
+
+  useEffect(() => {
+    const loadPage =
+      async () => {
+
+        setLoading(true);
+
+
+        try {
+          const [
+            user,
+            organizationList,
+          ] =
+            await Promise.all([
+              getCurrentUser(),
+              getMyOrganizations(),
+            ]);
+
+
+          setCurrentUser(
+            user
+          );
+
+
+          setOrganizations(
+            Array.isArray(
+              organizationList
+            )
+              ? organizationList
+              : []
+          );
+
+
+          setProjects(
+            getWorkspaceProjects()
+          );
+        } catch (error) {
+          console.error(
+            "Load projects page error:",
+            error
+          );
+        } finally {
+          setLoading(false);
+        }
+      };
+
+
+    loadPage();
+  }, []);
+
+
+  const visibleProjects =
+    useMemo(
+      () => {
+
+        if (!currentUser) {
+          return [];
+        }
+
+
+        return projects.filter(
+          (project) =>
+            canViewWorkspaceProject(
+              currentUser,
+              project,
+              organizations
+            )
+        );
+      },
+      [
+        projects,
+        currentUser,
+        organizations,
+      ]
     );
 
 
   const filteredProjects =
-    statusFilter === "all"
-      ? userProjects
-      : userProjects.filter(
-          (project) =>
-            project.status ===
-            statusFilter
+    useMemo(
+      () => {
+
+        const search =
+          searchValue
+            .trim()
+            .toLowerCase();
+
+
+        return visibleProjects.filter(
+          (project) => {
+
+            if (
+              statusFilter !==
+                "all" &&
+              project.status !==
+                statusFilter
+            ) {
+              return false;
+            }
+
+
+            if (
+              organizationFilter !==
+                "all" &&
+              String(
+                project.organizationId
+              ) !==
+                organizationFilter
+            ) {
+              return false;
+            }
+
+
+            if (!search) {
+              return true;
+            }
+
+
+            return (
+              project.title
+                ?.toLowerCase()
+                .includes(search) ||
+              project.organizationName
+                ?.toLowerCase()
+                .includes(search)
+            );
+          }
         );
+      },
+      [
+        visibleProjects,
+        statusFilter,
+        organizationFilter,
+        searchValue,
+      ]
+    );
+
+
+  const canCreate =
+    canCreateProjectFromOrganizations(
+      currentUser,
+      organizations
+    );
 
 
   return (
     <section className="projects-page">
 
-      {/* =====================
-          TOOLBAR
-      ====================== */}
+      <div className="projects-heading">
+
+        <div>
+          <h2>
+            پروژه‌ها
+          </h2>
+
+          <p>
+            مدیریت پروژه‌های سازمان، اعضا و سطح دسترسی پروژه‌ای
+          </p>
+        </div>
+
+
+        {canCreate && (
+          <Link
+            to="/projects/create"
+            className="create-project-button"
+          >
+            <Plus
+              size={18}
+            />
+
+            ایجاد پروژه
+          </Link>
+        )}
+
+      </div>
+
 
       <div className="projects-toolbar">
 
+        <div className="projects-search">
+
+          <Search
+            size={17}
+          />
+
+          <input
+            type="text"
+            value={
+              searchValue
+            }
+            onChange={(
+              event
+            ) =>
+              setSearchValue(
+                event.target.value
+              )
+            }
+            placeholder="جستجو در پروژه‌ها..."
+          />
+
+        </div>
+
+
         <div className="projects-filter-section">
 
-          <div className="projects-list-info">
+          <div className="status-filter">
 
-            <span className="projects-count-label">
-              پروژه‌های من
-            </span>
+            <Filter
+              size={16}
+            />
 
-            <span className="projects-total-count">
-              {userProjects.length} پروژه
-            </span>
+            <select
+              value={
+                organizationFilter
+              }
+              onChange={(
+                event
+              ) =>
+                setOrganizationFilter(
+                  event.target.value
+                )
+              }
+            >
+              <option value="all">
+                همه سازمان‌ها
+              </option>
+
+              {organizations.map(
+                (organization) => (
+                  <option
+                    key={
+                      organization.id
+                    }
+                    value={
+                      organization.id
+                    }
+                  >
+                    {
+                      organization.name
+                    }
+                  </option>
+                )
+              )}
+            </select>
 
           </div>
 
 
           <div className="status-filter">
 
-            <Filter size={17} />
+            <Filter
+              size={16}
+            />
 
             <select
-              value={statusFilter}
-              onChange={(event) =>
+              value={
+                statusFilter
+              }
+              onChange={(
+                event
+              ) =>
                 setStatusFilter(
                   event.target.value
                 )
               }
             >
-              <option value="all">
-                همه وضعیت‌ها
-              </option>
-
-              <option value="in-progress">
-                در حال انجام
-              </option>
-
-              <option value="delayed">
-                به تعویق افتاده
-              </option>
-
-              <option value="review">
-                در انتظار تایید
-              </option>
-
-              <option value="completed">
-                تکمیل شده
-              </option>
+              {Object.entries(
+                STATUS_OPTIONS
+              ).map(
+                ([
+                  value,
+                  label,
+                ]) => (
+                  <option
+                    key={
+                      value
+                    }
+                    value={
+                      value
+                    }
+                  >
+                    {label}
+                  </option>
+                )
+              )}
             </select>
 
           </div>
 
         </div>
 
-
-        <div className="projects-actions">
-
-          <button
-            type="button"
-            className="pdf-button"
-          >
-            <Download size={17} />
-
-            <span>
-              خروجی گزارش PDF
-            </span>
-          </button>
-
-
-          {canCreateProject(
-            currentUser
-          ) && (
-
-            <Link
-              to="/projects/create"
-              className="create-project-button"
-            >
-              <Plus size={19} />
-
-              <span>
-                ایجاد پروژه جدید
-              </span>
-            </Link>
-
-          )}
-
-        </div>
-
       </div>
 
 
-      {/* =====================
-          TABLE
-      ====================== */}
-
       <div className="projects-table-card">
 
-        <div className="projects-table-wrapper">
+        <div className="projects-table-header">
 
-          <table className="projects-table">
+          <div>
+            <strong>
+              پروژه‌های من
+            </strong>
 
-            <thead>
+            <span>
+              {filteredProjects.length}
+              {" "}
+              پروژه
+            </span>
+          </div>
 
-              <tr>
-                <th>
-                  عنوان پروژه
-                </th>
-
-                <th>
-                  وضعیت پروژه
-                </th>
-
-                <th>
-                  پیشرفت
-                </th>
-
-                <th>
-                  مدیر پروژه
-                </th>
-
-                <th>
-                  نقش من
-                </th>
-
-                <th>
-                  تاریخ شروع
-                </th>
-
-                <th>
-                  عملیات
-                </th>
-              </tr>
-
-            </thead>
+        </div>
 
 
-            <tbody>
+        {loading ? (
+          <div className="projects-empty">
+            در حال بارگذاری پروژه‌ها...
+          </div>
+        ) : filteredProjects.length ===
+          0 ? (
+          <div className="projects-empty">
 
-              {filteredProjects.map(
-                (project) => {
+            <Building2
+              size={39}
+            />
 
-                  const manager =
-                    getProjectManager(
-                      project
-                    );
+            <strong>
+              پروژه‌ای برای نمایش وجود ندارد
+            </strong>
 
+            <p>
+              اگر مالک یا مدیر سازمان هستید، اولین پروژه را ایجاد کنید.
+            </p>
 
-                  const membership =
-                    getProjectMembership(
-                      project,
-                      currentUser.id
-                    );
+          </div>
+        ) : (
+          <div className="projects-table-wrapper">
 
+            <table className="projects-table">
 
-                  const userCanEdit =
-                    canEditProject(
-                      currentUser,
-                      project
-                    );
+              <thead>
+                <tr>
+                  <th>
+                    عنوان پروژه
+                  </th>
 
+                  <th>
+                    سازمان
+                  </th>
 
-                  return (
-                    <tr
-                      key={
-                        project.id
-                      }
-                    >
+                  <th>
+                    وضعیت
+                  </th>
 
-                      {/* TITLE */}
+                  <th>
+                    پیشرفت
+                  </th>
 
-                      <td>
+                  <th>
+                    مدیر پروژه
+                  </th>
 
-                        <Link
-                          to={`/projects/${project.id}`}
-                          className="project-title-link"
-                        >
-                          {
-                            project.title
-                          }
-                        </Link>
+                  <th>
+                    نقش من
+                  </th>
 
-                      </td>
+                  <th>
+                    تاریخ شروع
+                  </th>
 
-
-                      {/* STATUS */}
-
-                      <td>
-
-                        <span
-                          className={`project-status status-${project.status}`}
-                        >
-                          {
-                            project.statusLabel
-                          }
-                        </span>
-
-                      </td>
+                  <th>
+                    عملیات
+                  </th>
+                </tr>
+              </thead>
 
 
-                      {/* PROGRESS */}
+              <tbody>
 
-                      <td>
+                {filteredProjects.map(
+                  (project) => {
 
-                        <div className="progress-cell">
+                    const managers =
+                      getProjectManagers(
+                        project
+                      );
 
-                          <span className="progress-number">
+
+                    const membership =
+                      getProjectMembership(
+                        project,
+                        currentUser?.id
+                      );
+
+
+                    const organizationRole =
+                      getProjectOrganizationRole(
+                        project,
+                        currentUser,
+                        organizations
+                      );
+
+
+                    const canEdit =
+                      canManageWorkspaceProject(
+                        currentUser,
+                        project,
+                        organizations
+                      );
+
+
+                    const normalizedRole =
+                      membership
+                        ? normalizeProjectRole(
+                            membership.role
+                          )
+                        : null;
+
+
+                    const accessLabel =
+                      membership
+                        ? getProjectRoleLabel(
+                            membership.role
+                          )
+                        : organizationRole ===
+                          "OWNER"
+                          ? "مالک سازمان"
+                          : organizationRole ===
+                            "ADMIN"
+                            ? "مدیر سازمان"
+                            : "عضو";
+
+
+                    return (
+                      <tr
+                        key={
+                          project.id
+                        }
+                      >
+
+                        <td>
+
+                          <Link
+                            to={`/projects/${project.id}`}
+                            className="project-title-link"
+                          >
                             {
-                              project.progress
+                              project.title
                             }
-                            %
+                          </Link>
+
+                        </td>
+
+
+                        <td>
+                          <span className="project-organization-name">
+                            {
+                              project.organizationName ||
+                              "سازمان"
+                            }
+                          </span>
+                        </td>
+
+
+                        <td>
+
+                          <span
+                            className={`project-status status-${project.status}`}
+                          >
+                            {STATUS_OPTIONS[
+                              project.status
+                            ] ||
+                              "در حال انجام"}
                           </span>
 
+                        </td>
 
-                          <div className="progress-track">
 
-                            <div
-                              className={`progress-fill progress-${project.status}`}
-                              style={{
-                                width:
-                                  `${project.progress}%`,
-                              }}
-                            />
+                        <td>
+
+                          <div className="progress-cell">
+
+                            <span className="progress-number">
+                              {
+                                project.progress
+                              }
+                              %
+                            </span>
+
+                            <div className="progress-track">
+
+                              <div
+                                className="progress-fill"
+                                style={{
+                                  width:
+                                    `${project.progress}%`,
+                                }}
+                              />
+
+                            </div>
 
                           </div>
 
-                        </div>
-
-                      </td>
+                        </td>
 
 
-                      {/* MANAGER */}
+                        <td>
+                          {managers.length >
+                          0
+                            ? managers
+                                .map(
+                                  (
+                                    manager
+                                  ) =>
+                                    manager.fullName
+                                )
+                                .join("، ")
+                            : "تعیین نشده"}
+                        </td>
 
-                      <td>
-                        {manager
-                          ?.fullName ||
-                          "تعیین نشده"}
-                      </td>
+
+                        <td>
+
+                          <span
+                            className={
+                              normalizedRole ===
+                              PROJECT_ROLES.MANAGER
+                                ? "project-user-role role-manager"
+                                : normalizedRole ===
+                                  PROJECT_ROLES.TEAM_LEAD
+                                  ? "project-user-role role-lead"
+                                  : "project-user-role role-member"
+                            }
+                          >
+                            {
+                              accessLabel
+                            }
+                          </span>
+
+                        </td>
 
 
-                      {/* MY ROLE */}
-
-                      <td>
-
-                        <span
-                          className={
-                            membership
-                              ?.role ===
-                            PROJECT_ROLES.PROJECT_MANAGER
-                              ? "project-user-role role-manager"
-                              : "project-user-role role-member"
-                          }
-                        >
+                        <td>
                           {
-                            getProjectRoleLabel(
-                              membership
-                                ?.role
-                            )
+                            project.startDate ||
+                            "-"
                           }
-                        </span>
-
-                      </td>
+                        </td>
 
 
-                      {/* START DATE */}
+                        <td>
 
-                      <td>
-                        {
-                          project.startDate
-                        }
-                      </td>
-
-
-                      {/* ACTIONS */}
-
-                      <td>
-
-                        <div className="project-row-actions">
-
-                          {userCanEdit ? (
-
+                          {canEdit ? (
                             <Link
                               to={`/projects/${project.id}/edit`}
                               className="edit-project-button"
                             >
                               <Pencil
-                                size={16}
+                                size={15}
                               />
 
-                              <span>
-                                ویرایش
-                              </span>
+                              ویرایش
                             </Link>
-
                           ) : (
-
                             <span className="project-no-edit">
                               فقط مشاهده
                             </span>
-
                           )}
 
-                        </div>
+                        </td>
 
-                      </td>
+                      </tr>
+                    );
+                  }
+                )}
 
-                    </tr>
-                  );
-                }
-              )}
+              </tbody>
 
-            </tbody>
-
-          </table>
-
-        </div>
-
-
-        {filteredProjects.length ===
-          0 && (
-
-          <div className="projects-empty">
-
-            {userProjects.length ===
-            0
-              ? "در حال حاضر عضو هیچ پروژه‌ای نیستید."
-              : "پروژه‌ای با این وضعیت وجود ندارد."}
+            </table>
 
           </div>
-
         )}
 
       </div>

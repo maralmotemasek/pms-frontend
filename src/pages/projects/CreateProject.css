@@ -725,3 +725,256 @@
   }
 
 }
+/* =========================================
+   WEEK 2 - ORGANIZATION & PROJECT MEMBERS
+========================================= */
+
+.project-organization-select {
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  border: 1px solid #dbe4f0;
+  border-radius: 9px;
+  background-color: #f8fafc;
+  color: #2563eb;
+}
+
+.project-organization-select:focus-within {
+  border-color: #2563eb;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.project-organization-select select {
+  flex: 1;
+  height: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1e293b;
+  font: inherit;
+}
+
+.project-team-section-title {
+  margin-bottom: 12px;
+}
+
+.project-team-section-title > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #2563eb;
+}
+
+.project-team-section-title > div > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-team-section-title strong {
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.project-team-section-title span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.project-team-builder {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+  gap: 16px;
+}
+
+.project-team-source,
+.project-selected-team {
+  min-height: 260px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.project-team-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 11px;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  color: #94a3b8;
+}
+
+.project-team-search:focus-within {
+  border-color: #2563eb;
+  background-color: #ffffff;
+}
+
+.project-team-search input {
+  height: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.project-team-candidates {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.project-team-candidate,
+.project-selected-member {
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.project-team-candidate {
+  justify-content: space-between;
+}
+
+.project-team-candidate > div,
+.project-selected-member-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.project-team-candidate strong,
+.project-selected-member strong {
+  color: #1e293b;
+  font-size: 12px;
+}
+
+.project-team-candidate span,
+.project-selected-member span {
+  direction: ltr;
+  text-align: right;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.project-team-candidate button {
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.project-selected-team-header {
+  min-height: 42px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.project-selected-team-header span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-size: 10px;
+}
+
+.project-selected-member-info {
+  flex: 1;
+}
+
+.project-selected-member select {
+  width: 130px;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid #dbe4f0;
+  border-radius: 7px;
+  background-color: #f8fafc;
+  color: #334155;
+  font: inherit;
+  font-size: 10px;
+}
+
+.project-remove-team-member {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 7px;
+  background-color: transparent;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.project-remove-team-member:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.project-team-empty {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 11px;
+  text-align: center;
+}
+
+.project-form-message {
+  grid-column: 1 / -1;
+  padding: 11px 13px;
+  border-radius: 8px;
+  background-color: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+@media (max-width: 850px) {
+  .project-team-builder {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .project-selected-member {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .project-selected-member select {
+    width: 100%;
+  }
+}
