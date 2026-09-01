@@ -1,0 +1,931 @@
+﻿import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
+import {
+  ArrowRight,
+  Building2,
+  Crown,
+  Search,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
+
+import {
+  getCurrentUser,
+} from "../../services/authService";
+
+import {
+  getMyOrganizations,
+} from "../../services/organizationService";
+
+import {
+  ORGANIZATION_MEMBER_ROLE_OPTIONS,
+  ORGANIZATION_ROLE_LABELS,
+  ORGANIZATION_ROLES,
+} from "../../constants/roles";
+
+import {
+  loadOrganizationMembers,
+  saveOrganizationMembers,
+  searchMockDirectoryUsers,
+} from "../../data/organizationUiMockData";
+
+import "./OrganizationDetails.css";
+
+
+function OrganizationDetails() {
+  const {
+    id: organizationId,
+  } = useParams();
+
+  const navigate =
+    useNavigate();
+
+  const location =
+    useLocation();
+
+
+  const [
+    organization,
+    setOrganization,
+  ] = useState(
+    location.state?.organization ||
+    null
+  );
+
+  const [
+    currentUser,
+    setCurrentUser,
+  ] = useState(null);
+
+  const [
+    members,
+    setMembers,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    searchValue,
+    setSearchValue,
+  ] = useState("");
+
+  const [
+    selectedUser,
+    setSelectedUser,
+  ] = useState(null);
+
+  const [
+    selectedRole,
+    setSelectedRole,
+  ] = useState(
+    ORGANIZATION_ROLES.ORG_MEMBER
+  );
+
+
+  useEffect(() => {
+    const loadPage =
+      async () => {
+
+        setLoading(true);
+        setError("");
+
+
+        try {
+          const user =
+            await getCurrentUser();
+
+          setCurrentUser(user);
+
+
+          let loadedOrganization =
+            location.state?.organization ||
+            null;
+
+
+          if (
+            !loadedOrganization ||
+            String(
+              loadedOrganization.id
+            ) !==
+              String(
+                organizationId
+              )
+          ) {
+            const organizations =
+              await getMyOrganizations();
+
+
+            loadedOrganization =
+              organizations.find(
+                (item) =>
+                  String(item.id) ===
+                  String(organizationId)
+              ) || null;
+          }
+
+
+          if (!loadedOrganization) {
+            setError(
+              "سازمان موردنظر پیدا نشد."
+            );
+
+            return;
+          }
+
+
+          setOrganization(
+            loadedOrganization
+          );
+
+
+          const loadedMembers =
+            loadOrganizationMembers(
+              loadedOrganization,
+              user
+            );
+
+
+          setMembers(
+            loadedMembers
+          );
+        } catch (requestError) {
+          console.error(
+            "Load organization details error:",
+            requestError
+          );
+
+          setError(
+            "دریافت اطلاعات سازمان با خطا مواجه شد."
+          );
+        } finally {
+          setLoading(false);
+        }
+      };
+
+
+    loadPage();
+  }, [
+    organizationId,
+    location.state,
+  ]);
+
+
+  const currentMember =
+    useMemo(
+      () =>
+        members.find(
+          (member) =>
+            Number(
+              member.user_id
+            ) ===
+            Number(
+              currentUser?.id
+            )
+        ) || null,
+      [
+        members,
+        currentUser,
+      ]
+    );
+
+
+  const currentRole =
+    currentMember?.role ||
+    (
+      Number(
+        organization?.owner_id
+      ) ===
+      Number(
+        currentUser?.id
+      )
+        ? ORGANIZATION_ROLES.OWNER
+        : ORGANIZATION_ROLES.ORG_MEMBER
+    );
+
+
+  const canManageMembers =
+    currentRole ===
+      ORGANIZATION_ROLES.OWNER ||
+    currentRole ===
+      ORGANIZATION_ROLES.ADMIN;
+
+
+  const searchResults =
+    useMemo(
+      () =>
+        searchMockDirectoryUsers(
+          searchValue,
+          members
+        ),
+      [
+        searchValue,
+        members,
+      ]
+    );
+
+
+  const updateMembers =
+    (nextMembers) => {
+
+      setMembers(
+        nextMembers
+      );
+
+
+      saveOrganizationMembers(
+        organization.id,
+        nextMembers
+      );
+    };
+
+
+  const handleAddMember =
+    () => {
+
+      if (
+        !selectedUser ||
+        !canManageMembers
+      ) {
+        return;
+      }
+
+
+      const nextMember = {
+        user_id:
+          selectedUser.id,
+
+        full_name:
+          selectedUser.full_name,
+
+        username:
+          selectedUser.username,
+
+        email:
+          selectedUser.email,
+
+        role:
+          selectedRole,
+      };
+
+
+      updateMembers([
+        ...members,
+        nextMember,
+      ]);
+
+
+      setSelectedUser(null);
+
+      setSelectedRole(
+        ORGANIZATION_ROLES.ORG_MEMBER
+      );
+
+      setSearchValue("");
+    };
+
+
+  const canEditMember =
+    (member) => {
+
+      if (!canManageMembers) {
+        return false;
+      }
+
+
+      if (
+        member.role ===
+        ORGANIZATION_ROLES.OWNER
+      ) {
+        return false;
+      }
+
+
+      if (
+        currentRole ===
+          ORGANIZATION_ROLES.ADMIN &&
+        Number(
+          member.user_id
+        ) ===
+          Number(
+            currentUser?.id
+          )
+      ) {
+        return false;
+      }
+
+
+      return true;
+    };
+
+
+  const handleRoleChange =
+    (
+      userId,
+      nextRole
+    ) => {
+
+      const member =
+        members.find(
+          (item) =>
+            Number(
+              item.user_id
+            ) ===
+            Number(userId)
+        );
+
+
+      if (
+        !member ||
+        !canEditMember(member)
+      ) {
+        return;
+      }
+
+
+      updateMembers(
+        members.map(
+          (item) =>
+            Number(
+              item.user_id
+            ) ===
+            Number(userId)
+              ? {
+                  ...item,
+                  role: nextRole,
+                }
+              : item
+        )
+      );
+    };
+
+
+  const handleRemoveMember =
+    (member) => {
+
+      if (
+        !canEditMember(member)
+      ) {
+        return;
+      }
+
+
+      updateMembers(
+        members.filter(
+          (item) =>
+            Number(
+              item.user_id
+            ) !==
+            Number(
+              member.user_id
+            )
+        )
+      );
+    };
+
+
+  if (loading) {
+    return (
+      <section className="organization-details-page">
+
+        <div className="organization-details-state">
+          در حال دریافت اطلاعات سازمان...
+        </div>
+
+      </section>
+    );
+  }
+
+
+  if (
+    error ||
+    !organization
+  ) {
+    return (
+      <section className="organization-details-page">
+
+        <div className="organization-details-state">
+
+          <p>
+            {error ||
+              "سازمان پیدا نشد."}
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                "/organizations"
+              )
+            }
+          >
+            بازگشت به سازمان‌ها
+          </button>
+
+        </div>
+
+      </section>
+    );
+  }
+
+
+  return (
+    <section className="organization-details-page">
+
+      <div className="organization-details-topbar">
+
+        <button
+          type="button"
+          className="organization-back-button"
+          onClick={() =>
+            navigate(
+              "/organizations"
+            )
+          }
+        >
+          <ArrowRight
+            size={18}
+          />
+
+          سازمان‌ها
+        </button>
+
+
+        <span
+          className="organization-current-role"
+        >
+          <ShieldCheck
+            size={16}
+          />
+
+          {ORGANIZATION_ROLE_LABELS[
+            currentRole
+          ]}
+        </span>
+
+      </div>
+
+
+      <div className="organization-details-hero">
+
+        <div className="organization-hero-icon">
+
+          <Building2
+            size={31}
+          />
+
+        </div>
+
+
+        <div className="organization-hero-content">
+
+          <h2>
+            {organization.name}
+          </h2>
+
+          <p>
+            {organization.description ||
+              "توضیحی برای این سازمان ثبت نشده است."}
+          </p>
+
+        </div>
+
+
+        <div className="organization-hero-meta">
+
+          <span>
+            <Crown
+              size={16}
+            />
+
+            شناسه مالک:
+            {" "}
+            {organization.owner_id}
+          </span>
+
+
+          <span>
+            <Users
+              size={16}
+            />
+
+            {members.length}
+            {" "}
+            عضو
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div className="organization-members-title">
+
+        <div>
+          <h3>
+            مدیریت اعضای سازمان
+          </h3>
+
+          <p>
+            اعضای سازمان و سطح دسترسی سازمانی آن‌ها
+          </p>
+        </div>
+
+      </div>
+
+
+      <div className="organization-members-layout">
+
+        <div className="organization-members-card">
+
+          <div className="organization-section-header">
+
+            <div>
+              <h3>
+                اعضای سازمان
+              </h3>
+
+              <p>
+                نقش سازمانی اعضا مستقل از نقش آن‌ها در پروژه‌ها است.
+              </p>
+            </div>
+
+            <span className="organization-member-count">
+              {members.length}
+              {" "}
+              عضو
+            </span>
+
+          </div>
+
+
+          <div className="organization-member-list">
+
+            {members.map(
+              (member) => {
+
+                const isOwner =
+                  member.role ===
+                  ORGANIZATION_ROLES.OWNER;
+
+
+                const editable =
+                  canEditMember(
+                    member
+                  );
+
+
+                return (
+                  <article
+                    key={
+                      member.user_id
+                    }
+                    className="organization-member-item"
+                  >
+
+                    <div className="organization-member-avatar">
+                      {member
+                        .full_name
+                        ?.charAt(0) ||
+                        "U"}
+                    </div>
+
+
+                    <div className="organization-member-info">
+
+                      <strong>
+                        {member.full_name}
+                      </strong>
+
+                      <span>
+                        @
+                        {member.username}
+                      </span>
+
+                    </div>
+
+
+                    <div className="organization-member-role">
+
+                      {isOwner ? (
+                        <span className="organization-owner-badge">
+
+                          <Crown
+                            size={14}
+                          />
+
+                          مالک سازمان
+
+                        </span>
+                      ) : editable ? (
+                        <select
+                          value={
+                            member.role
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            handleRoleChange(
+                              member.user_id,
+                              event
+                                .target
+                                .value
+                            )
+                          }
+                        >
+
+                          {ORGANIZATION_MEMBER_ROLE_OPTIONS.map(
+                            (
+                              option
+                            ) => (
+                              <option
+                                key={
+                                  option.value
+                                }
+                                value={
+                                  option.value
+                                }
+                              >
+                                {
+                                  option.label
+                                }
+                              </option>
+                            )
+                          )}
+
+                        </select>
+                      ) : (
+                        <span className="organization-role-badge">
+
+                          {
+                            ORGANIZATION_ROLE_LABELS[
+                              member.role
+                            ]
+                          }
+
+                        </span>
+                      )}
+
+                    </div>
+
+
+                    {editable && (
+                      <button
+                        type="button"
+                        className="organization-remove-member"
+                        onClick={() =>
+                          handleRemoveMember(
+                            member
+                          )
+                        }
+                        aria-label="حذف عضو"
+                      >
+                        <Trash2
+                          size={17}
+                        />
+                      </button>
+                    )}
+
+                  </article>
+                );
+              }
+            )}
+
+          </div>
+
+        </div>
+
+
+        <div className="organization-add-member-card">
+
+          <div className="organization-section-header">
+
+            <div>
+              <h3>
+                افزودن عضو
+              </h3>
+
+              <p>
+                جستجو با نام کاربری
+              </p>
+            </div>
+
+            <UserPlus
+              size={21}
+            />
+
+          </div>
+
+
+          {!canManageMembers ? (
+            <div className="organization-permission-message">
+
+              فقط مالک یا مدیر سازمان می‌تواند عضو جدید اضافه کند.
+
+            </div>
+          ) : (
+            <>
+
+              <div className="organization-member-search">
+
+                <Search
+                  size={18}
+                />
+
+                <input
+                  type="text"
+                  value={
+                    searchValue
+                  }
+                  onChange={(
+                    event
+                  ) => {
+                    setSearchValue(
+                      event
+                        .target
+                        .value
+                    );
+
+                    setSelectedUser(
+                      null
+                    );
+                  }}
+                  placeholder="مثلاً sara.ahmadi"
+                />
+
+              </div>
+
+
+              <div className="organization-search-caption">
+                کاربران آزمایشی — تا زمان آماده شدن API جستجوی کاربران
+              </div>
+
+
+              <div className="organization-search-results">
+
+                {searchResults.length ===
+                0 ? (
+                  <div className="organization-no-result">
+
+                    کاربر دیگری برای افزودن پیدا نشد.
+
+                  </div>
+                ) : (
+                  searchResults.map(
+                    (user) => (
+                      <button
+                        type="button"
+                        key={
+                          user.id
+                        }
+                        className={
+                          selectedUser
+                            ?.id ===
+                          user.id
+                            ? "organization-search-user selected"
+                            : "organization-search-user"
+                        }
+                        onClick={() =>
+                          setSelectedUser(
+                            user
+                          )
+                        }
+                      >
+
+                        <div>
+
+                          <strong>
+                            {
+                              user.full_name
+                            }
+                          </strong>
+
+                          <span>
+                            @
+                            {
+                              user.username
+                            }
+                          </span>
+
+                        </div>
+
+                      </button>
+                    )
+                  )
+                )}
+
+              </div>
+
+
+              {selectedUser && (
+                <div className="organization-selected-user">
+
+                  <div>
+                    <strong>
+                      {
+                        selectedUser.full_name
+                      }
+                    </strong>
+
+                    <span>
+                      @
+                      {
+                        selectedUser.username
+                      }
+                    </span>
+                  </div>
+
+
+                  <label>
+
+                    نقش سازمانی
+
+                    <select
+                      value={
+                        selectedRole
+                      }
+                      onChange={(
+                        event
+                      ) =>
+                        setSelectedRole(
+                          event
+                            .target
+                            .value
+                        )
+                      }
+                    >
+
+                      {ORGANIZATION_MEMBER_ROLE_OPTIONS.map(
+                        (
+                          option
+                        ) => (
+                          <option
+                            key={
+                              option.value
+                            }
+                            value={
+                              option.value
+                            }
+                          >
+                            {
+                              option.label
+                            }
+                          </option>
+                        )
+                      )}
+
+                    </select>
+
+                  </label>
+
+
+                  <button
+                    type="button"
+                    onClick={
+                      handleAddMember
+                    }
+                  >
+
+                    <UserPlus
+                      size={17}
+                    />
+
+                    افزودن به سازمان
+
+                  </button>
+
+                </div>
+              )}
+
+            </>
+          )}
+
+        </div>
+
+      </div>
+
+    </section>
+  );
+}
+
+
+export default OrganizationDetails;

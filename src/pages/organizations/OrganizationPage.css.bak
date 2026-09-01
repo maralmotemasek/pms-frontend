@@ -1,0 +1,259 @@
+﻿.organization-page {
+  width: 100%;
+  padding: 28px;
+  direction: rtl;
+}
+
+.organization-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.organization-page-header h2 {
+  margin: 0 0 7px;
+  font-size: 24px;
+}
+
+.organization-page-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.organization-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(280px, 360px)
+    minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.organization-create-card,
+.organization-list-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 22px;
+}
+
+.organization-card-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 22px;
+}
+
+.organization-card-title h3,
+.organization-list-header h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.organization-card-title p {
+  margin: 7px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.organization-form {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+
+.organization-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.organization-field label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.organization-field input,
+.organization-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  padding: 11px 12px;
+  font: inherit;
+  outline: none;
+  resize: vertical;
+}
+
+.organization-field input:focus,
+.organization-field textarea:focus {
+  border-color: #6b7280;
+}
+
+.organization-form-error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.organization-submit-button {
+  border: none;
+  border-radius: 9px;
+  padding: 11px 16px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.organization-submit-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.organization-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.organization-list-header > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.organization-list-header span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.organization-refresh-button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.organization-state,
+.organization-empty {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 11px;
+  color: #6b7280;
+}
+
+.organization-state button {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.organization-error {
+  color: #b91c1c;
+}
+
+.organization-empty h4 {
+  margin: 4px 0 0;
+  color: #111827;
+}
+
+.organization-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.organization-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+}
+
+.organization-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 11px;
+}
+
+.organization-item-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.organization-item-content h4 {
+  margin: 0 0 7px;
+  font-size: 15px;
+}
+
+.organization-item-content p {
+  margin: 0 0 8px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.organization-item-content span {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.organization-spinner {
+  animation: organization-spin 0.8s linear infinite;
+}
+
+@keyframes organization-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .organization-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.organization-item-button {
+  width: 100%;
+  background: #ffffff;
+  text-align: right;
+  font: inherit;
+  cursor: pointer;
+}
+
+.organization-item-button:hover {
+  background: #f9fafb;
+}

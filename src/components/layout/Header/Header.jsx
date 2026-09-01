@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useState,
 } from "react";
@@ -12,19 +12,20 @@ import {
   UserRound,
 } from "lucide-react";
 
+import {
+  getCurrentUser,
+} from "../../../services/authService";
+
 import "./Header.css";
 
 
 function Header() {
-  const navigate =
-    useNavigate();
-
+  const navigate = useNavigate();
 
   const [
     user,
     setUser,
   ] = useState(null);
-
 
   const [
     loadingUser,
@@ -33,7 +34,7 @@ function Header() {
 
 
   useEffect(() => {
-    const getCurrentUser =
+    const loadCurrentUser =
       async () => {
 
         const accessToken =
@@ -41,64 +42,22 @@ function Header() {
             "access_token"
           );
 
-
         if (!accessToken) {
           setLoadingUser(false);
+
+          navigate(
+            "/login",
+            {
+              replace: true,
+            }
+          );
+
           return;
         }
 
-
         try {
-          const response =
-            await fetch(
-              "http://localhost:3001/auth/me",
-              {
-                method: "GET",
-
-                headers: {
-                  Authorization:
-                    `Bearer ${accessToken}`,
-
-                  Accept:
-                    "application/json",
-                },
-              }
-            );
-
-
-          if (
-            response.status === 401
-          ) {
-            localStorage.removeItem(
-              "access_token"
-            );
-
-            localStorage.removeItem(
-              "refresh_token"
-            );
-
-
-            navigate(
-              "/login",
-              {
-                replace: true,
-              }
-            );
-
-            return;
-          }
-
-
-          if (!response.ok) {
-            throw new Error(
-              "دریافت اطلاعات کاربر ناموفق بود."
-            );
-          }
-
-
           const data =
-            await response.json();
-
+            await getCurrentUser();
 
           setUser(data);
         } catch (error) {
@@ -106,13 +65,19 @@ function Header() {
             "Header user error:",
             error
           );
+
+          /*
+            اگر Refresh Token هم نامعتبر باشد،
+            api.js توکن‌ها را پاک می‌کند
+            و کاربر را به Login می‌فرستد.
+          */
         } finally {
           setLoadingUser(false);
         }
       };
 
 
-    getCurrentUser();
+    loadCurrentUser();
   }, [navigate]);
 
 
@@ -136,18 +101,14 @@ function Header() {
   return (
     <header className="main-header">
 
-      {/* =====================
-          USER SECTION
-      ====================== */}
+      {/* USER SECTION */}
 
       <div className="header-user">
 
         <button
           type="button"
           className="header-profile-button"
-          onClick={
-            handleProfileClick
-          }
+          onClick={handleProfileClick}
           aria-label="مشاهده پروفایل کاربری"
         >
 
@@ -202,9 +163,7 @@ function Header() {
       </div>
 
 
-      {/* =====================
-          SEARCH
-      ====================== */}
+      {/* SEARCH */}
 
       <div className="header-search">
 
@@ -216,9 +175,7 @@ function Header() {
       </div>
 
 
-      {/* =====================
-          TITLE
-      ====================== */}
+      {/* TITLE */}
 
       <h1 className="header-title">
         مدیریت پروژه‌های سازمان

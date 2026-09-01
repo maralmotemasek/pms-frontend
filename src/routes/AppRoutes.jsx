@@ -1,4 +1,4 @@
-import {
+﻿import {
   BrowserRouter,
   Routes,
   Route,
@@ -20,6 +20,9 @@ import EditTask from "../pages/tasks/EditTask";
 
 import UserProfile from "../pages/user/UserProfile";
 
+import OrganizationPage from "../pages/organizations/OrganizationPage";
+import OrganizationDetails from "../pages/organizations/OrganizationDetails";
+
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
 
@@ -28,10 +31,6 @@ function AppRoutes() {
     <BrowserRouter>
 
       <Routes>
-
-        {/* =====================
-            DEFAULT
-        ====================== */}
 
         <Route
           path="/"
@@ -43,15 +42,12 @@ function AppRoutes() {
         />
 
 
-        {/* =====================
-            AUTH
-        ====================== */}
+        {/* AUTH */}
 
         <Route
           path="/login"
           element={<Login />}
         />
-
 
         <Route
           path="/register"
@@ -59,9 +55,7 @@ function AppRoutes() {
         />
 
 
-        {/* =====================
-            APP
-        ====================== */}
+        {/* APP */}
 
         <Route
           element={<AppLayout />}
@@ -77,13 +71,30 @@ function AppRoutes() {
           />
 
 
+          {/* ORGANIZATIONS */}
+
+          <Route
+            path="/organizations"
+            element={
+              <OrganizationPage />
+            }
+          />
+
+
+          <Route
+            path="/organizations/:id"
+            element={
+              <OrganizationDetails />
+            }
+          />
+
+
           {/* PROJECTS */}
 
           <Route
             path="/projects"
             element={<Projects />}
           />
-
 
           <Route
             path="/projects/create"
@@ -92,14 +103,12 @@ function AppRoutes() {
             }
           />
 
-
           <Route
             path="/projects/:id"
             element={
               <ProjectDetails />
             }
           />
-
 
           <Route
             path="/projects/:id/edit"
@@ -116,7 +125,6 @@ function AppRoutes() {
             element={<Tasks />}
           />
 
-
           <Route
             path="/tasks/create"
             element={
@@ -124,14 +132,12 @@ function AppRoutes() {
             }
           />
 
-
           <Route
             path="/tasks/:id"
             element={
               <TaskDetails />
             }
           />
-
 
           <Route
             path="/tasks/:id/edit"
@@ -150,3 +156,4 @@ function AppRoutes() {
 
 
 export default AppRoutes;
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   useEffect,
   useState,
 } from "react";
@@ -17,6 +17,10 @@ import {
   UserRound,
 } from "lucide-react";
 
+import {
+  getCurrentUser,
+} from "../../services/authService";
+
 import "./UserProfile.css";
 
 
@@ -29,7 +33,6 @@ function getStatusLabel(status) {
     return "نامشخص";
   }
 
-
   if (
     status === true ||
     String(status).toLowerCase() === "true" ||
@@ -37,7 +40,6 @@ function getStatusLabel(status) {
   ) {
     return "فعال";
   }
-
 
   if (
     status === false ||
@@ -47,13 +49,11 @@ function getStatusLabel(status) {
     return "غیرفعال";
   }
 
-
   if (
     String(status).toLowerCase() === "blocked"
   ) {
     return "مسدود";
   }
-
 
   return String(status);
 }
@@ -63,18 +63,15 @@ function UserProfile() {
   const navigate =
     useNavigate();
 
-
   const [
     user,
     setUser,
   ] = useState(null);
 
-
   const [
     loading,
     setLoading,
   ] = useState(true);
-
 
   const [
     error,
@@ -88,76 +85,27 @@ function UserProfile() {
       setLoading(true);
       setError("");
 
+      const accessToken =
+        localStorage.getItem(
+          "access_token"
+        );
+
+      if (!accessToken) {
+        navigate(
+          "/login",
+          {
+            replace: true,
+          }
+        );
+
+        setLoading(false);
+
+        return;
+      }
 
       try {
-        const accessToken =
-          localStorage.getItem(
-            "access_token"
-          );
-
-
-        if (!accessToken) {
-          navigate(
-            "/login",
-            {
-              replace: true,
-            }
-          );
-
-          return;
-        }
-
-
-        const response =
-          await fetch(
-            "http://localhost:3001/auth/me",
-            {
-              method: "GET",
-
-              headers: {
-                Authorization:
-                  `Bearer ${accessToken}`,
-
-                Accept:
-                  "application/json",
-              },
-            }
-          );
-
-
-        if (
-          response.status === 401
-        ) {
-          localStorage.removeItem(
-            "access_token"
-          );
-
-          localStorage.removeItem(
-            "refresh_token"
-          );
-
-
-          navigate(
-            "/login",
-            {
-              replace: true,
-            }
-          );
-
-          return;
-        }
-
-
-        if (!response.ok) {
-          throw new Error(
-            "دریافت اطلاعات کاربر با خطا مواجه شد."
-          );
-        }
-
-
         const data =
-          await response.json();
-
+          await getCurrentUser();
 
         setUser(data);
       } catch (requestError) {
@@ -166,9 +114,14 @@ function UserProfile() {
           requestError
         );
 
+        /*
+          اگر Refresh Token هم قابل استفاده
+          نباشد، api.js کاربر را به Login
+          منتقل می‌کند.
+        */
 
         setError(
-          "دریافت اطلاعات حساب کاربری امکان‌پذیر نیست. مطمئن شوید Backend اجرا شده است."
+          "دریافت اطلاعات حساب کاربری امکان‌پذیر نیست. دوباره تلاش کنید."
         );
       } finally {
         setLoading(false);
@@ -213,22 +166,17 @@ function UserProfile() {
             size={42}
           />
 
-
           <h2>
             اطلاعات حساب دریافت نشد
           </h2>
-
 
           <p>
             {error}
           </p>
 
-
           <button
             type="button"
-            onClick={
-              getUserProfile
-            }
+            onClick={getUserProfile}
           >
 
             <RefreshCw
@@ -249,9 +197,7 @@ function UserProfile() {
   return (
     <section className="user-profile-page">
 
-      {/* =====================
-          HEADER
-      ====================== */}
+      {/* HEADER */}
 
       <div className="user-profile-header">
 
@@ -260,7 +206,6 @@ function UserProfile() {
           <h2>
             پروفایل کاربری
           </h2>
-
 
           <p>
             اطلاعات حساب کاربری شما
@@ -271,9 +216,7 @@ function UserProfile() {
       </div>
 
 
-      {/* =====================
-          PROFILE CARD
-      ====================== */}
+      {/* PROFILE CARD */}
 
       <div className="user-profile-card">
 
@@ -294,7 +237,6 @@ function UserProfile() {
               {user?.full_name ||
                 "کاربر"}
             </h3>
-
 
             <span>
               {user?.username ||
@@ -324,9 +266,7 @@ function UserProfile() {
         </div>
 
 
-        {/* =====================
-            USER INFO
-        ====================== */}
+        {/* USER INFO */}
 
         <div className="user-profile-info-grid">
 
@@ -348,7 +288,6 @@ function UserProfile() {
               <span>
                 نام و نام خانوادگی
               </span>
-
 
               <strong>
                 {user?.full_name ||
@@ -379,7 +318,6 @@ function UserProfile() {
                 نام کاربری
               </span>
 
-
               <strong>
                 {user?.username ||
                   "ثبت نشده"}
@@ -408,7 +346,6 @@ function UserProfile() {
               <span>
                 ایمیل
               </span>
-
 
               <strong className="english-value">
                 {user?.email ||
@@ -439,7 +376,6 @@ function UserProfile() {
                 شماره موبایل
               </span>
 
-
               <strong className="english-value">
                 {user?.phone ||
                   "ثبت نشده"}
@@ -468,7 +404,6 @@ function UserProfile() {
               <span>
                 وضعیت حساب
               </span>
-
 
               <strong>
                 {getStatusLabel(
@@ -500,7 +435,6 @@ function UserProfile() {
                 شناسه کاربر
               </span>
 
-
               <strong>
                 {user?.id ??
                   "نامشخص"}
@@ -515,9 +449,7 @@ function UserProfile() {
       </div>
 
 
-      {/* =====================
-          NOTE
-      ====================== */}
+      {/* NOTE */}
 
       <div className="user-profile-note">
 
@@ -525,13 +457,9 @@ function UserProfile() {
           size={18}
         />
 
-
         <p>
           اطلاعات این صفحه از حساب کاربری
-          لاگین‌شده دریافت می‌شود. اطلاعات
-          Organization و Role بعداً پس از
-          آماده شدن APIهای مربوط به سازمان
-          به این بخش اضافه می‌شوند.
+          واردشده دریافت می‌شود.
         </p>
 
       </div>

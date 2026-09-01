@@ -1,7 +1,15 @@
-import { NavLink, useNavigate } from "react-router-dom";
+﻿import {
+  useState,
+} from "react";
+
+import {
+  NavLink,
+  useNavigate,
+} from "react-router-dom";
 
 import {
   LayoutDashboard,
+  Building2,
   FolderKanban,
   ClipboardList,
   BarChart3,
@@ -11,28 +19,69 @@ import {
   Box,
 } from "lucide-react";
 
+import {
+  logoutUser,
+} from "../../../services/authService";
+
 import "./Sidebar.css";
 
 
 function Sidebar() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
+
+  const [
+    isLoggingOut,
+    setIsLoggingOut,
+  ] = useState(false);
 
 
-  const handleLogout = () => {
-    // بعداً وقتی JWT اضافه شد،
-    // اینجا Token را هم پاک می‌کنیم.
-    navigate("/login");
-  };
+  const handleLogout =
+    async () => {
+
+      if (isLoggingOut) {
+        return;
+      }
+
+      setIsLoggingOut(true);
+
+      try {
+        await logoutUser();
+      } catch (error) {
+        console.error(
+          "Logout error:",
+          error
+        );
+      } finally {
+        navigate(
+          "/login",
+          {
+            replace: true,
+          }
+        );
+
+        setIsLoggingOut(false);
+      }
+    };
+
+
+  const getLinkClass =
+    ({ isActive }) =>
+      isActive
+        ? "sidebar-link active"
+        : "sidebar-link";
 
 
   return (
     <aside className="sidebar">
 
-      {/* Brand */}
       <div className="sidebar-brand">
 
         <div className="sidebar-logo">
-          <Box size={22} strokeWidth={2.2} />
+          <Box
+            size={22}
+            strokeWidth={2.2}
+          />
         </div>
 
         <span className="sidebar-brand-text">
@@ -42,83 +91,129 @@ function Sidebar() {
       </div>
 
 
-      {/* Menu */}
       <nav className="sidebar-nav">
 
         <NavLink
           to="/dashboard"
-          className={({ isActive }) =>
-            isActive ? "sidebar-link active" : "sidebar-link"
-          }
+          className={getLinkClass}
         >
-          <LayoutDashboard className="sidebar-icon" size={21} />
-          <span>داشبورد</span>
+          <LayoutDashboard
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            داشبورد
+          </span>
+        </NavLink>
+
+
+        <NavLink
+          to="/organizations"
+          className={getLinkClass}
+        >
+          <Building2
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            سازمان‌ها
+          </span>
         </NavLink>
 
 
         <NavLink
           to="/projects"
-          className={({ isActive }) =>
-            isActive ? "sidebar-link active" : "sidebar-link"
-          }
+          className={getLinkClass}
         >
-          <FolderKanban className="sidebar-icon" size={21} />
-          <span>پروژه‌ها</span>
+          <FolderKanban
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            پروژه‌ها
+          </span>
         </NavLink>
 
 
         <NavLink
           to="/tasks"
-          className={({ isActive }) =>
-            isActive ? "sidebar-link active" : "sidebar-link"
-          }
+          className={getLinkClass}
         >
-          <ClipboardList className="sidebar-icon" size={21} />
-          <span>وظایف</span>
+          <ClipboardList
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            وظایف
+          </span>
         </NavLink>
 
 
         <NavLink
           to="/reports"
-          className={({ isActive }) =>
-            isActive ? "sidebar-link active" : "sidebar-link"
-          }
+          className={getLinkClass}
         >
-          <BarChart3 className="sidebar-icon" size={21} />
-          <span>گزارش‌ها</span>
+          <BarChart3
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            گزارش‌ها
+          </span>
         </NavLink>
 
 
         <NavLink
           to="/chat"
-          className={({ isActive }) =>
-            isActive ? "sidebar-link active" : "sidebar-link"
-          }
+          className={getLinkClass}
         >
-          <MessageSquare className="sidebar-icon" size={21} />
-          <span>چت تیمی</span>
+          <MessageSquare
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            چت تیمی
+          </span>
         </NavLink>
 
 
         <NavLink
           to="/ai-chat"
-          className={({ isActive }) =>
-            isActive ? "sidebar-link active" : "sidebar-link"
-          }
+          className={getLinkClass}
         >
-          <Sparkles className="sidebar-icon" size={21} />
-          <span>دستیار هوشمند</span>
+          <Sparkles
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            دستیار هوشمند
+          </span>
         </NavLink>
 
 
-        {/* Logout دقیقا زیر دستیار هوشمند */}
         <button
           type="button"
           className="sidebar-link logout-button"
           onClick={handleLogout}
+          disabled={isLoggingOut}
         >
-          <LogOut className="sidebar-icon" size={21} />
-          <span>خروج</span>
+          <LogOut
+            className="sidebar-icon"
+            size={21}
+          />
+
+          <span>
+            {isLoggingOut
+              ? "در حال خروج..."
+              : "خروج"}
+          </span>
         </button>
 
       </nav>
