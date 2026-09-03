@@ -76,9 +76,9 @@ function Register() {
         "ثبت نام با موفقیت انجام شد."
       );
 
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000);
+           setTimeout(() => {
+         navigate("/dashboard");
+         }, 1000);
     } catch (error) {
       console.error(
         "Register error:",
