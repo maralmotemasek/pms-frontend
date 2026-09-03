@@ -8,6 +8,8 @@
 import Login from "../pages/auth/Login/Login";
 import Register from "../pages/auth/Register/Register";
 
+import Dashboard from "../pages/dashboard/Dashboard";
+
 import Projects from "../pages/projects/Projects";
 import CreateProject from "../pages/projects/CreateProject";
 import EditProject from "../pages/projects/EditProject";
@@ -26,13 +28,16 @@ import OrganizationDetails from "../pages/organizations/OrganizationDetails";
 import Resources from "../pages/resources/Resources";
 import ProjectResources from "../pages/resources/ProjectResources";
 
+import Reports from "../pages/reports/Reports";
+import InternalChat from "../pages/chat/InternalChat";
+import AIAssistant from "../pages/ai/AIAssistant";
+
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
 
 function AppRoutes() {
   return (
     <BrowserRouter>
-
       <Routes>
 
         <Route
@@ -64,13 +69,19 @@ function AppRoutes() {
           element={<AppLayout />}
         >
 
+          {/* DASHBOARD */}
+
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
+
+
           {/* USER */}
 
           <Route
             path="/profile"
-            element={
-              <UserProfile />
-            }
+            element={<UserProfile />}
           />
 
 
@@ -82,7 +93,6 @@ function AppRoutes() {
               <OrganizationPage />
             }
           />
-
 
           <Route
             path="/organizations/:id"
@@ -96,9 +106,7 @@ function AppRoutes() {
 
           <Route
             path="/resources"
-            element={
-              <Resources />
-            }
+            element={<Resources />}
           />
 
 
@@ -164,21 +172,42 @@ function AppRoutes() {
 
           <Route
             path="/tasks/:id/edit"
+            element={<EditTask />}
+          />
+
+
+          {/* REPORTS */}
+
+          <Route
+            path="/reports"
+            element={<Reports />}
+          />
+
+
+          {/* INTERNAL CHAT */}
+
+          <Route
+            path="/chat"
             element={
-              <EditTask />
+              <InternalChat />
+            }
+          />
+
+
+          {/* AI ASSISTANT */}
+
+          <Route
+            path="/ai-chat"
+            element={
+              <AIAssistant />
             }
           />
 
         </Route>
 
       </Routes>
-
     </BrowserRouter>
   );
 }
 
-
 export default AppRoutes;
-
-
-
