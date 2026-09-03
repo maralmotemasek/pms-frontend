@@ -42,6 +42,10 @@ import {
   updateResource,
 } from "../../data/resourceWorkspaceStore";
 
+import {
+  getResourceAllocatedPercent,
+} from "../../data/resourceAssignmentStore";
+
 import "./Resources.css";
 
 
@@ -797,6 +801,41 @@ function Resources() {
                 );
 
 
+              const totalCapacity =
+                Number(
+                  resource.capacity ??
+                  100
+                );
+
+
+              const allocatedCapacity =
+                getResourceAllocatedPercent(
+                  resource.id
+                );
+
+
+              const remainingCapacity =
+                Math.max(
+                  0,
+                  totalCapacity -
+                    allocatedCapacity
+                );
+
+
+              const usagePercent =
+                totalCapacity > 0
+                  ? Math.min(
+                      100,
+                      Math.round(
+                        (
+                          allocatedCapacity /
+                          totalCapacity
+                        ) * 100
+                      )
+                    )
+                  : 0;
+
+
               return (
                 <article
                   className="resource-card"
@@ -886,6 +925,39 @@ function Resources() {
                   </div>
 
 
+                  <div className="resource-capacity-usage">
+
+                    <div className="resource-capacity-label">
+
+                      <span>
+                        میزان استفاده
+                      </span>
+
+                      <strong>
+                        {
+                          usagePercent
+                        }
+                        %
+                      </strong>
+
+                    </div>
+
+
+                    <div className="resource-capacity-track">
+
+                      <div
+                        className="resource-capacity-fill"
+                        style={{
+                          width:
+                            `${usagePercent}%`,
+                        }}
+                      />
+
+                    </div>
+
+                  </div>
+
+
                   <div className="resource-info">
 
                     <div>
@@ -907,10 +979,42 @@ function Resources() {
                       />
 
                       <span>
-                        ظرفیت:
+                        ظرفیت کل:
                         {" "}
                         {
-                          resource.capacity
+                          totalCapacity
+                        }
+                        %
+                      </span>
+                    </div>
+
+
+                    <div>
+                      <Gauge
+                        size={16}
+                      />
+
+                      <span>
+                        تخصیص داده‌شده:
+                        {" "}
+                        {
+                          allocatedCapacity
+                        }
+                        %
+                      </span>
+                    </div>
+
+
+                    <div>
+                      <Gauge
+                        size={16}
+                      />
+
+                      <span>
+                        ظرفیت آزاد:
+                        {" "}
+                        {
+                          remainingCapacity
                         }
                         %
                       </span>
@@ -1235,3 +1339,4 @@ function Resources() {
 
 
 export default Resources;
+

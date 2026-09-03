@@ -15,6 +15,7 @@ import {
   Building2,
   CalendarDays,
   CircleDollarSign,
+  Gauge,
   Pencil,
   Search,
   Trash2,
@@ -596,18 +597,34 @@ function ProjectDetails() {
         </div>
 
 
-        {canManage && (
+        <div className="project-details-header-actions">
+
           <Link
-            to={`/projects/${project.id}/edit`}
-            className="project-details-edit-button"
+            to={`/projects/${project.id}/resources`}
+            className="project-details-resources-button"
           >
-            <Pencil
+            <Gauge
               size={17}
             />
 
-            ویرایش پروژه
+            منابع پروژه
           </Link>
-        )}
+
+
+          {canManage && (
+            <Link
+              to={`/projects/${project.id}/edit`}
+              className="project-details-edit-button"
+            >
+              <Pencil
+                size={17}
+              />
+
+              ویرایش پروژه
+            </Link>
+          )}
+
+        </div>
 
       </div>
 
@@ -1073,3 +1090,5 @@ function ProjectDetails() {
 
 
 export default ProjectDetails;
+
+

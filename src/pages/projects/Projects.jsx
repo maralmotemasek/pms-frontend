@@ -11,7 +11,6 @@ import {
 import {
   Building2,
   Filter,
-  Pencil,
   Plus,
   Search,
 } from "lucide-react";
@@ -37,7 +36,6 @@ import {
 
 import {
   canCreateProjectFromOrganizations,
-  canManageWorkspaceProject,
   canViewWorkspaceProject,
   getProjectOrganizationRole,
   getProjectRoleLabel,
@@ -48,18 +46,10 @@ import "./Projects.css";
 
 const STATUS_OPTIONS = {
   all: "همه وضعیت‌ها",
-
-  "in-progress":
-    "در حال انجام",
-
-  delayed:
-    "با تأخیر",
-
-  review:
-    "در انتظار تأیید",
-
-  completed:
-    "تکمیل شده",
+  "in-progress": "در حال انجام",
+  delayed: "با تأخیر",
+  review: "در انتظار تأیید",
+  completed: "تکمیل شده",
 };
 
 
@@ -69,36 +59,30 @@ function Projects() {
     setCurrentUser,
   ] = useState(null);
 
-
   const [
     organizations,
     setOrganizations,
   ] = useState([]);
-
 
   const [
     projects,
     setProjects,
   ] = useState([]);
 
-
   const [
     loading,
     setLoading,
   ] = useState(true);
-
 
   const [
     statusFilter,
     setStatusFilter,
   ] = useState("all");
 
-
   const [
     organizationFilter,
     setOrganizationFilter,
   ] = useState("all");
-
 
   const [
     searchValue,
@@ -112,7 +96,6 @@ function Projects() {
 
         setLoading(true);
 
-
         try {
           const [
             user,
@@ -123,20 +106,17 @@ function Projects() {
               getMyOrganizations(),
             ]);
 
-
-          setCurrentUser(
-            user
-          );
-
-
-          setOrganizations(
+          const safeOrganizations =
             Array.isArray(
               organizationList
             )
               ? organizationList
-              : []
-          );
+              : [];
 
+          setCurrentUser(user);
+          setOrganizations(
+            safeOrganizations
+          );
 
           setProjects(
             getWorkspaceProjects()
@@ -164,7 +144,6 @@ function Projects() {
           return [];
         }
 
-
         return projects.filter(
           (project) =>
             canViewWorkspaceProject(
@@ -191,7 +170,6 @@ function Projects() {
             .trim()
             .toLowerCase();
 
-
         return visibleProjects.filter(
           (project) => {
 
@@ -204,7 +182,6 @@ function Projects() {
               return false;
             }
 
-
             if (
               organizationFilter !==
                 "all" &&
@@ -216,11 +193,9 @@ function Projects() {
               return false;
             }
 
-
             if (!search) {
               return true;
             }
-
 
             return (
               project.title
@@ -264,15 +239,12 @@ function Projects() {
           </p>
         </div>
 
-
         {canCreate && (
           <Link
             to="/projects/create"
             className="create-project-button"
           >
-            <Plus
-              size={18}
-            />
+            <Plus size={18} />
 
             ایجاد پروژه
           </Link>
@@ -285,18 +257,12 @@ function Projects() {
 
         <div className="projects-search">
 
-          <Search
-            size={17}
-          />
+          <Search size={17} />
 
           <input
             type="text"
-            value={
-              searchValue
-            }
-            onChange={(
-              event
-            ) =>
+            value={searchValue}
+            onChange={(event) =>
               setSearchValue(
                 event.target.value
               )
@@ -311,17 +277,13 @@ function Projects() {
 
           <div className="status-filter">
 
-            <Filter
-              size={16}
-            />
+            <Filter size={16} />
 
             <select
               value={
                 organizationFilter
               }
-              onChange={(
-                event
-              ) =>
+              onChange={(event) =>
                 setOrganizationFilter(
                   event.target.value
                 )
@@ -354,17 +316,11 @@ function Projects() {
 
           <div className="status-filter">
 
-            <Filter
-              size={16}
-            />
+            <Filter size={16} />
 
             <select
-              value={
-                statusFilter
-              }
-              onChange={(
-                event
-              ) =>
+              value={statusFilter}
+              onChange={(event) =>
                 setStatusFilter(
                   event.target.value
                 )
@@ -378,12 +334,8 @@ function Projects() {
                   label,
                 ]) => (
                   <option
-                    key={
-                      value
-                    }
-                    value={
-                      value
-                    }
+                    key={value}
+                    value={value}
                   >
                     {label}
                   </option>
@@ -425,9 +377,7 @@ function Projects() {
           0 ? (
           <div className="projects-empty">
 
-            <Building2
-              size={39}
-            />
+            <Building2 size={39} />
 
             <strong>
               پروژه‌ای برای نمایش وجود ندارد
@@ -472,10 +422,6 @@ function Projects() {
                   <th>
                     تاریخ شروع
                   </th>
-
-                  <th>
-                    عملیات
-                  </th>
                 </tr>
               </thead>
 
@@ -490,13 +436,11 @@ function Projects() {
                         project
                       );
 
-
                     const membership =
                       getProjectMembership(
                         project,
                         currentUser?.id
                       );
-
 
                     const organizationRole =
                       getProjectOrganizationRole(
@@ -505,22 +449,12 @@ function Projects() {
                         organizations
                       );
 
-
-                    const canEdit =
-                      canManageWorkspaceProject(
-                        currentUser,
-                        project,
-                        organizations
-                      );
-
-
                     const normalizedRole =
                       membership
                         ? normalizeProjectRole(
                             membership.role
                           )
                         : null;
-
 
                     const accessLabel =
                       membership
@@ -548,6 +482,7 @@ function Projects() {
                           <Link
                             to={`/projects/${project.id}`}
                             className="project-title-link"
+                            title="مشاهده و مدیریت پروژه"
                           >
                             {
                               project.title
@@ -614,9 +549,7 @@ function Projects() {
                           0
                             ? managers
                                 .map(
-                                  (
-                                    manager
-                                  ) =>
+                                  (manager) =>
                                     manager.fullName
                                 )
                                 .join("، ")
@@ -646,32 +579,8 @@ function Projects() {
 
 
                         <td>
-                          {
-                            project.startDate ||
-                            "-"
-                          }
-                        </td>
-
-
-                        <td>
-
-                          {canEdit ? (
-                            <Link
-                              to={`/projects/${project.id}/edit`}
-                              className="edit-project-button"
-                            >
-                              <Pencil
-                                size={15}
-                              />
-
-                              ویرایش
-                            </Link>
-                          ) : (
-                            <span className="project-no-edit">
-                              فقط مشاهده
-                            </span>
-                          )}
-
+                          {project.startDate ||
+                            "-"}
                         </td>
 
                       </tr>

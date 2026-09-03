@@ -24,6 +24,7 @@ import OrganizationPage from "../pages/organizations/OrganizationPage";
 import OrganizationDetails from "../pages/organizations/OrganizationDetails";
 
 import Resources from "../pages/resources/Resources";
+import ProjectResources from "../pages/resources/ProjectResources";
 
 import AppLayout from "../components/layout/AppLayout/AppLayout";
 
@@ -130,6 +131,16 @@ function AppRoutes() {
           />
 
 
+          {/* PROJECT RESOURCES */}
+
+          <Route
+            path="/projects/:id/resources"
+            element={
+              <ProjectResources />
+            }
+          />
+
+
           {/* TASKS */}
 
           <Route
@@ -168,5 +179,6 @@ function AppRoutes() {
 
 
 export default AppRoutes;
+
 
 

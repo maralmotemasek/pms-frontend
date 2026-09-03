@@ -568,3 +568,45 @@
     flex: 1;
   }
 }
+
+.project-details-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-details-resources-button {
+  height: 42px;
+  padding: 0 15px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.project-details-resources-button:hover {
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+@media (max-width: 600px) {
+  .project-details-header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .project-details-resources-button,
+  .project-details-edit-button {
+    width: 100%;
+  }
+}
