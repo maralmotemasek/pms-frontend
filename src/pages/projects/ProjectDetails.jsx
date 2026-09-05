@@ -148,6 +148,120 @@ function getOrganizationMemberUser(
 }
 
 
+function formatProjectDate(
+  value
+) {
+  if (!value) {
+    return "-";
+  }
+
+
+  const rawValue =
+    String(value).trim();
+
+
+  /*
+    If the value is already a Jalali date,
+    keep it as Jalali and only normalize
+    the separator.
+  */
+  const existingPersianDate =
+    rawValue.match(
+      /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/
+    );
+
+
+  if (
+    existingPersianDate &&
+    Number(
+      existingPersianDate[1]
+    ) < 1700
+  ) {
+    return rawValue.replaceAll(
+      "-",
+      "/"
+    );
+  }
+
+
+  /*
+    Backend Date fields normally arrive as:
+    YYYY-MM-DD
+  */
+  let year;
+  let month;
+  let day;
+
+
+  const isoDate =
+    rawValue.match(
+      /^(\d{4})-(\d{2})-(\d{2})/
+    );
+
+
+  if (isoDate) {
+    year =
+      Number(isoDate[1]);
+
+    month =
+      Number(isoDate[2]);
+
+    day =
+      Number(isoDate[3]);
+  } else {
+    /*
+      Defensive support for:
+      DD-MM-YYYY
+    */
+    const dayFirstDate =
+      rawValue.match(
+        /^(\d{2})-(\d{2})-(\d{4})$/
+      );
+
+
+    if (!dayFirstDate) {
+      return rawValue;
+    }
+
+
+    day =
+      Number(dayFirstDate[1]);
+
+    month =
+      Number(dayFirstDate[2]);
+
+    year =
+      Number(dayFirstDate[3]);
+  }
+
+
+  const date =
+    new Date(
+      year,
+      month - 1,
+      day
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return rawValue;
+  }
+
+
+  return new Intl.DateTimeFormat(
+    "fa-IR-u-ca-persian",
+    {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }
+  ).format(date);
+}
+
 function ProjectDetails() {
   const navigate =
     useNavigate();
@@ -393,6 +507,49 @@ function ProjectDetails() {
           );
 
 
+        const foundOrganizationRole =
+          getOrganizationRole(
+            foundOrganization,
+            safeOrganizationMembers,
+            user
+          );
+
+
+        const currentProjectMembership =
+          normalizedMembers.find(
+            (member) =>
+              Number(
+                member.userId
+              ) ===
+              Number(
+                user.id
+              )
+          ) ||
+          null;
+
+
+        const canViewProject =
+          foundOrganizationRole ===
+            ORGANIZATION_ROLES.OWNER ||
+          foundOrganizationRole ===
+            ORGANIZATION_ROLES.ADMIN ||
+          Boolean(
+            currentProjectMembership
+          );
+
+
+        if (!canViewProject) {
+          setProject(
+            null
+          );
+
+          setError(
+            "پروژه موردنظر پیدا نشد یا شما به آن دسترسی ندارید."
+          );
+
+          return;
+        }
+
         const normalizedProject =
           normalizeProject(
             foundProject,
@@ -455,13 +612,6 @@ function ProjectDetails() {
   }, [id]);
 
 
-  const canManage =
-    organizationRole ===
-      ORGANIZATION_ROLES.OWNER ||
-    organizationRole ===
-      ORGANIZATION_ROLES.ADMIN;
-
-
   const currentMembership =
     useMemo(
       () => {
@@ -494,6 +644,19 @@ function ProjectDetails() {
       ]
     );
 
+
+  const canManage =
+    organizationRole ===
+      ORGANIZATION_ROLES.OWNER ||
+    organizationRole ===
+      ORGANIZATION_ROLES.ADMIN;
+
+
+  const canDeleteProject =
+    organizationRole ===
+      ORGANIZATION_ROLES.OWNER ||
+    organizationRole ===
+      ORGANIZATION_ROLES.ADMIN;
 
   const managers =
     useMemo(
@@ -829,7 +992,7 @@ function ProjectDetails() {
       if (
         !project ||
         !organization ||
-        !canManage ||
+        !canDeleteProject ||
         actionLoading
       ) {
         return;
@@ -1052,7 +1215,7 @@ function ProjectDetails() {
           )}
 
 
-          {canManage && (
+          {canDeleteProject && (
             <button
               type="button"
               className="project-details-delete-button"
@@ -1164,17 +1327,27 @@ function ProjectDetails() {
             </span>
 
             <strong>
-              {
-                project.startDate ||
-                "-"
-              }
+              <bdi>
+                {
+                  formatProjectDate(
+                    project.startDate
+                  )
+                }
+              </bdi>
+
               {" "}
+
               تا
+
               {" "}
-              {
-                project.endDate ||
-                "-"
-              }
+
+              <bdi>
+                {
+                  formatProjectDate(
+                    project.endDate
+                  )
+                }
+              </bdi>
             </strong>
 
           </div>

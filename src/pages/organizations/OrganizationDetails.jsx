@@ -301,6 +301,20 @@ function OrganizationDetails() {
     ORGANIZATION_ROLES.OWNER;
 
 
+  const organizationAdmin =
+    members.find(
+      (member) =>
+        member.role ===
+        ORGANIZATION_ROLES.ADMIN
+    ) ||
+    null;
+
+
+  const hasOrganizationAdmin =
+    Boolean(
+      organizationAdmin
+    );
+
   const clearMessages = () => {
     setActionError("");
     setActionMessage("");
@@ -374,6 +388,15 @@ function OrganizationDetails() {
       return false;
     }
 
+
+    if (
+      currentRole ===
+        ORGANIZATION_ROLES.ADMIN &&
+      member.role ===
+        ORGANIZATION_ROLES.ADMIN
+    ) {
+      return false;
+    }
     return true;
   };
 
@@ -415,6 +438,32 @@ function OrganizationDetails() {
         inviting
       ) {
         return;
+      }
+      if (
+        selectedRole ===
+        ORGANIZATION_ROLES.ADMIN
+      ) {
+        if (
+          currentRole !==
+          ORGANIZATION_ROLES.OWNER
+        ) {
+          setActionError(
+            "فقط مالک سازمان می‌تواند مدیر سازمان تعیین کند."
+          );
+
+          return;
+        }
+
+
+        if (
+          hasOrganizationAdmin
+        ) {
+          setActionError(
+            "این سازمان در حال حاضر یک مدیر دارد و امکان تعیین مدیر دوم وجود ندارد."
+          );
+
+          return;
+        }
       }
 
       if (username.length < 3) {
@@ -481,6 +530,24 @@ function OrganizationDetails() {
         !member ||
         !canChangeMemberRole(member)
       ) {
+        return;
+      }
+
+      if (
+        nextRole ===
+          ORGANIZATION_ROLES.ADMIN &&
+        organizationAdmin &&
+        Number(
+          organizationAdmin.user_id
+        ) !==
+          Number(
+            userId
+          )
+      ) {
+        setActionError(
+          "این سازمان در حال حاضر یک مدیر دارد و امکان تعیین مدیر دوم وجود ندارد."
+        );
+
         return;
       }
 
@@ -1005,7 +1072,16 @@ function OrganizationDetails() {
                             }
                           >
 
-                            {ORGANIZATION_MEMBER_ROLE_OPTIONS.map(
+                            {ORGANIZATION_MEMBER_ROLE_OPTIONS
+                              .filter(
+                                (option) =>
+                                  option.value !==
+                                    ORGANIZATION_ROLES.ADMIN ||
+                                  !hasOrganizationAdmin ||
+                                  member.role ===
+                                    ORGANIZATION_ROLES.ADMIN
+                              )
+                              .map(
                               (
                                 option
                               ) => (
@@ -1148,7 +1224,15 @@ function OrganizationDetails() {
                     }
                   >
 
-                    {ORGANIZATION_MEMBER_ROLE_OPTIONS.map(
+                    {ORGANIZATION_MEMBER_ROLE_OPTIONS
+                      .filter(
+                        (option) =>
+                          currentRole ===
+                            ORGANIZATION_ROLES.OWNER ||
+                          option.value !==
+                            ORGANIZATION_ROLES.ADMIN
+                      )
+                      .map(
                       (
                         option
                       ) => (
@@ -1207,5 +1291,3 @@ function OrganizationDetails() {
 
 
 export default OrganizationDetails;
-
-

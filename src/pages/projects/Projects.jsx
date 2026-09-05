@@ -445,8 +445,22 @@ function Projects() {
             ] =
               result.role;
 
+            const visibleProjects =
+              result.role ===
+                ORGANIZATION_ROLES.OWNER ||
+              result.role ===
+                ORGANIZATION_ROLES.ADMIN
+                ? result.projects
+                : result.projects.filter(
+                    (project) =>
+                      Boolean(
+                        project.currentProjectRole
+                      )
+                  );
+
+
             allProjects.push(
-              ...result.projects
+              ...visibleProjects
             );
           }
         );
@@ -874,14 +888,6 @@ function Projects() {
 
 
                     if (
-                      project.currentProjectRole
-                    ) {
-                      accessLabel =
-                        PROJECT_ROLE_LABELS[
-                          project.currentProjectRole
-                        ] ||
-                        "عضو پروژه";
-                    } else if (
                       organizationRole ===
                       ORGANIZATION_ROLES.OWNER
                     ) {
@@ -893,8 +899,15 @@ function Projects() {
                     ) {
                       accessLabel =
                         "مدیر سازمان";
+                    } else if (
+                      project.currentProjectRole
+                    ) {
+                      accessLabel =
+                        PROJECT_ROLE_LABELS[
+                          project.currentProjectRole
+                        ] ||
+                        "عضو پروژه";
                     }
-
 
                     const normalizedRole =
                       project.currentProjectRole;
