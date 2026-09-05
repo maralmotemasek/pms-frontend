@@ -26,6 +26,7 @@ import {
 } from "../../services/authService";
 
 import {
+  deleteOrganization,
   getMyOrganizations,
   getOrganizationMembers,
   inviteOrganizationMember,
@@ -142,10 +143,6 @@ function OrganizationDetails() {
     setActionMessage,
   ] = useState("");
 
-  const [
-    deleteNotice,
-    setDeleteNotice,
-  ] = useState("");
 
   const [
     inviteUsername,
@@ -168,6 +165,12 @@ function OrganizationDetails() {
     pendingMemberId,
     setPendingMemberId,
   ] = useState(null);
+
+
+  const [
+    deletingOrganization,
+    setDeletingOrganization,
+  ] = useState(false);
 
 
   useEffect(() => {
@@ -301,7 +304,6 @@ function OrganizationDetails() {
   const clearMessages = () => {
     setActionError("");
     setActionMessage("");
-    setDeleteNotice("");
   };
 
 
@@ -309,44 +311,44 @@ function OrganizationDetails() {
     member
   ) => {
     const isCurrentUser =
-      Number(member.user_id) ===
-      Number(currentUser?.id);
-
-    if (isCurrentUser) {
-      return {
-        fullName:
-          currentUser?.full_name ||
-          currentUser?.username ||
-          `کاربر #${member.user_id}`,
-
-        secondary:
-          currentUser?.username
-            ? `@${currentUser.username}`
-            : `شناسه کاربر: ${member.user_id}`,
-      };
-    }
-
-    if (
-      Number(member.user_id) ===
       Number(
-        organization?.owner_id
-      )
-    ) {
-      return {
-        fullName:
-          `مالک سازمان #${member.user_id}`,
+        member.user_id
+      ) ===
+      Number(
+        currentUser?.id
+      );
 
-        secondary:
-          `شناسه کاربر: ${member.user_id}`,
-      };
-    }
+
+    const username =
+      member.username ||
+      member.user?.username ||
+      (
+        isCurrentUser
+          ? currentUser?.username
+          : ""
+      ) ||
+      "";
+
+
+    const fullName =
+      member.full_name ||
+      member.user?.full_name ||
+      (
+        isCurrentUser
+          ? currentUser?.full_name
+          : ""
+      ) ||
+      username ||
+      `کاربر #${member.user_id}`;
+
 
     return {
-      fullName:
-        `کاربر #${member.user_id}`,
+      fullName,
 
       secondary:
-        `شناسه کاربر: ${member.user_id}`,
+        username
+          ? `@${username}`
+          : `شناسه کاربر: ${member.user_id}`,
     };
   };
 
@@ -543,7 +545,7 @@ function OrganizationDetails() {
 
       const confirmed =
         window.confirm(
-          `آیا از حذف کاربر #${member.user_id} از سازمان مطمئن هستید؟`
+          `آیا از حذف «${getMemberDisplay(member).fullName}» از سازمان مطمئن هستید؟`
         );
 
       if (!confirmed) {
@@ -595,14 +597,113 @@ function OrganizationDetails() {
 
 
   const handleDeleteOrganizationUi =
-    () => {
-      setActionError("");
-      setActionMessage("");
+    async () => {
+      clearMessages();
 
-      setDeleteNotice(
-        "بخش حذف سازمان در رابط کاربری اضافه شده است. چون بک‌اند فعلی هنوز endpoint حذف سازمان ندارد، فعلاً هیچ درخواست حذفی ارسال نمی‌شود."
-      );
+      if (
+        !canDeleteOrganization ||
+        deletingOrganization
+      ) {
+        return;
+      }
+
+      const confirmed =
+        window.confirm(
+          `آیا از حذف کامل سازمان «${organization.name}» مطمئن هستید؟ این عملیات قابل بازگشت نیست.`
+        );
+
+      if (!confirmed) {
+        return;
+      }
+
+      setDeletingOrganization(true);
+
+      try {
+        await deleteOrganization(
+          organization.id
+        );
+
+        navigate(
+          "/organizations",
+          {
+            replace: true,
+          }
+        );
+      } catch (requestError) {
+        console.error(
+          "Delete organization error:",
+          requestError
+        );
+
+        setActionError(
+          getRequestErrorMessage(
+            requestError,
+            "حذف سازمان با خطا مواجه شد."
+          )
+        );
+      } finally {
+        setDeletingOrganization(false);
+      }
     };
+
+
+
+  
+  const getOrganizationRolePriority =
+    (member) => {
+      const role =
+        typeof member?.role === "string"
+          ? member.role
+          : member?.role?.name;
+
+      const priorities = {
+        OWNER: 0,
+        ADMIN: 1,
+        ORG_MEMBER: 2,
+        MEMBER: 2,
+      };
+
+      return priorities[role] ?? 99;
+    };
+
+
+  const sortedMembers =
+    [...members].sort(
+      (memberA, memberB) => {
+        const priorityDifference =
+          getOrganizationRolePriority(
+            memberA
+          ) -
+          getOrganizationRolePriority(
+            memberB
+          );
+
+        if (
+          priorityDifference !== 0
+        ) {
+          return priorityDifference;
+        }
+
+        const nameA =
+          (
+            memberA?.full_name ||
+            memberA?.username ||
+            ""
+          ).trim();
+
+        const nameB =
+          (
+            memberB?.full_name ||
+            memberB?.username ||
+            ""
+          ).trim();
+
+        return nameA.localeCompare(
+          nameB,
+          "fa"
+        );
+      }
+    );
 
 
   if (loading) {
@@ -672,13 +773,18 @@ function OrganizationDetails() {
             <button
               type="button"
               className="organization-delete-button"
+              disabled={
+                deletingOrganization
+              }
               onClick={
                 handleDeleteOrganizationUi
               }
             >
               <Trash2 size={16} />
 
-              حذف سازمان
+              {deletingOrganization
+                ? "در حال حذف..."
+                : "حذف سازمان"}
             </button>
           )}
 
@@ -764,15 +870,7 @@ function OrganizationDetails() {
         </div>
       )}
 
-
-      {deleteNotice && (
-        <div className="organization-action-message warning">
-          {deleteNotice}
-        </div>
-      )}
-
-
-      <div className="organization-members-title">
+<div className="organization-members-title">
 
         <div>
           <h3>
@@ -819,7 +917,7 @@ function OrganizationDetails() {
                 عضوی برای این سازمان ثبت نشده است.
               </div>
             ) : (
-              members.map(
+              sortedMembers.map(
                 (member) => {
                   const isOwner =
                     member.role ===
@@ -1109,3 +1207,5 @@ function OrganizationDetails() {
 
 
 export default OrganizationDetails;
+
+

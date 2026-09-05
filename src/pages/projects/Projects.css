@@ -398,3 +398,34 @@
     padding: 10px;
   }
 }
+
+/* PROJECTS TABLE PROGRESS ALIGNMENT */
+
+.projects-table th:nth-child(4),
+.projects-table td:nth-child(4) {
+  text-align: center;
+}
+
+.projects-table td:nth-child(4) {
+  min-width: 170px;
+}
+
+.projects-table td:nth-child(4) .progress-cell {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  direction: ltr;
+}
+
+.projects-table td:nth-child(4) .progress-number {
+  flex: 0 0 34px;
+  min-width: 34px;
+  text-align: center;
+}
+
+.projects-table td:nth-child(4) .progress-track {
+  flex: 0 0 95px;
+}

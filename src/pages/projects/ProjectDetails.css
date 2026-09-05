@@ -610,3 +610,51 @@
     width: 100%;
   }
 }
+
+.project-details-delete-button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fff1f2;
+  color: #dc2626;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.project-details-delete-button:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.project-details-delete-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.project-details-action-message {
+  margin-bottom: 18px;
+  padding: 11px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.project-member-actions button:disabled,
+.project-available-member button:disabled,
+.project-member-actions select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

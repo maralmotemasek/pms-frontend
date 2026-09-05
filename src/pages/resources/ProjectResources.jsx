@@ -32,11 +32,17 @@ import {
 
 import {
   getMyOrganizations,
+  getOrganizationMembers,
 } from "../../services/organizationService";
 
 import {
-  getWorkspaceProjectById,
-} from "../../data/projectWorkspaceStore";
+  getMyProjects,
+  getOrganizationProjects,
+  getProjectMembers,
+  normalizeProject,
+  normalizeProjectMember,
+} from "../../services/projectService";
+
 
 import {
   getOrganizationResources,
@@ -54,9 +60,8 @@ import {
 } from "../../data/resourceAssignmentStore";
 
 import {
-  canManageWorkspaceProject,
-  canViewWorkspaceProject,
-} from "../../utils/projectAccess";
+  ORGANIZATION_ROLES,
+} from "../../constants/roles";
 
 import "./ProjectResources.css";
 
@@ -75,6 +80,83 @@ const EMPTY_FORM = {
   endDate: "",
   note: "",
 };
+
+
+function getOrganizationRole(
+  organization,
+  members,
+  user
+) {
+  if (
+    !organization ||
+    !user
+  ) {
+    return null;
+  }
+
+
+  if (
+    Number(
+      organization.owner_id
+    ) ===
+    Number(
+      user.id
+    )
+  ) {
+    return ORGANIZATION_ROLES.OWNER;
+  }
+
+
+  return (
+    members.find(
+      (member) =>
+        Number(
+          member.user_id
+        ) ===
+        Number(
+          user.id
+        )
+    )?.role ||
+    null
+  );
+}
+
+
+function getOrganizationMemberUser(
+  member,
+  currentUser
+) {
+  if (!member) {
+    return null;
+  }
+
+
+  if (
+    Number(
+      member.user_id
+    ) ===
+    Number(
+      currentUser?.id
+    )
+  ) {
+    return currentUser;
+  }
+
+
+  return {
+    full_name:
+      member.full_name ||
+      member.user?.full_name ||
+      member.username ||
+      member.user?.username ||
+      `کاربر #${member.user_id}`,
+
+    username:
+      member.username ||
+      member.user?.username ||
+      "",
+  };
+}
 
 
 function ProjectResources() {
@@ -102,6 +184,12 @@ function ProjectResources() {
   const [
     organizations,
     setOrganizations,
+  ] = useState([]);
+
+
+  const [
+    organizationMembers,
+    setOrganizationMembers,
   ] = useState([]);
 
 
@@ -167,17 +255,16 @@ function ProjectResources() {
           const [
             user,
             organizationList,
+            myProjects,
           ] =
             await Promise.all([
               getCurrentUser(),
               getMyOrganizations(),
+              getMyProjects()
+                .catch(
+                  () => []
+                ),
             ]);
-
-
-          const loadedProject =
-            getWorkspaceProjectById(
-              id
-            );
 
 
           const safeOrganizations =
@@ -188,28 +275,186 @@ function ProjectResources() {
               : [];
 
 
-          if (!loadedProject) {
-            setError(
-              "پروژه موردنظر پیدا نشد."
-            );
+          const safeMyProjects =
+            Array.isArray(
+              myProjects
+            )
+              ? myProjects
+              : [];
 
-            return;
+
+          let rawProject =
+            safeMyProjects.find(
+              (item) =>
+                String(
+                  item.id
+                ) ===
+                String(
+                  id
+                )
+            ) ||
+            null;
+
+
+          let foundOrganization =
+            rawProject
+              ? safeOrganizations.find(
+                  (organization) =>
+                    Number(
+                      organization.id
+                    ) ===
+                    Number(
+                      rawProject.organization_id
+                    )
+                ) ||
+                null
+              : null;
+
+
+          if (
+            !rawProject ||
+            !foundOrganization
+          ) {
+            for (
+              const organization
+              of safeOrganizations
+            ) {
+              try {
+                const organizationProjects =
+                  await getOrganizationProjects(
+                    organization.id
+                  );
+
+
+                const matchedProject =
+                  (
+                    Array.isArray(
+                      organizationProjects
+                    )
+                      ? organizationProjects
+                      : []
+                  ).find(
+                    (item) =>
+                      String(
+                        item.id
+                      ) ===
+                      String(
+                        id
+                      )
+                  );
+
+
+                if (
+                  matchedProject
+                ) {
+                  rawProject =
+                    matchedProject;
+
+                  foundOrganization =
+                    organization;
+
+                  break;
+                }
+              } catch (
+                projectRequestError
+              ) {
+                console.error(
+                  `Load organization ${organization.id} projects error:`,
+                  projectRequestError
+                );
+              }
+            }
           }
 
 
           if (
-            !canViewWorkspaceProject(
-              user,
-              loadedProject,
-              safeOrganizations
-            )
+            !rawProject ||
+            !foundOrganization
           ) {
             setError(
-              "شما به این پروژه دسترسی ندارید."
+              "پروژه موردنظر پیدا نشد یا شما به آن دسترسی ندارید."
             );
 
             return;
           }
+
+
+          const [
+            rawOrganizationMembers,
+            rawProjectMembers,
+          ] =
+            await Promise.all([
+              getOrganizationMembers(
+                foundOrganization.id
+              )
+                .catch(
+                  () => []
+                ),
+
+              getProjectMembers(
+                foundOrganization.id,
+                rawProject.id
+              )
+                .catch(
+                  () => []
+                ),
+            ]);
+
+
+          const safeOrganizationMembers =
+            Array.isArray(
+              rawOrganizationMembers
+            )
+              ? rawOrganizationMembers
+              : [];
+
+
+          const safeProjectMembers =
+            Array.isArray(
+              rawProjectMembers
+            )
+              ? rawProjectMembers
+              : [];
+
+
+          const normalizedMembers =
+            safeProjectMembers.map(
+              (member) => {
+
+                const organizationMember =
+                  safeOrganizationMembers.find(
+                    (item) =>
+                      Number(
+                        item.user_id
+                      ) ===
+                      Number(
+                        member.user_id
+                      )
+                  );
+
+
+                return normalizeProjectMember(
+                  member,
+                  getOrganizationMemberUser(
+                    organizationMember,
+                    user
+                  )
+                );
+              }
+            );
+
+
+          const loadedProject =
+            normalizeProject(
+              rawProject,
+              {
+                organizationName:
+                  foundOrganization.name,
+
+                members:
+                  normalizedMembers,
+              }
+            );
 
 
           setCurrentUser(
@@ -220,6 +465,10 @@ function ProjectResources() {
             safeOrganizations
           );
 
+          setOrganizationMembers(
+            safeOrganizationMembers
+          );
+
           setProject(
             loadedProject
           );
@@ -227,8 +476,7 @@ function ProjectResources() {
 
           setResources(
             getOrganizationResources(
-              loadedProject
-                .organizationId
+              loadedProject.organizationId
             )
           );
 
@@ -238,7 +486,9 @@ function ProjectResources() {
               loadedProject.id
             )
           );
-        } catch (requestError) {
+        } catch (
+          requestError
+        ) {
           console.error(
             "Load project resources error:",
             requestError
@@ -257,22 +507,51 @@ function ProjectResources() {
   }, [id]);
 
 
+  const organization =
+    useMemo(
+      () =>
+        organizations.find(
+          (item) =>
+            Number(
+              item.id
+            ) ===
+            Number(
+              project?.organizationId
+            )
+        ) ||
+        null,
+      [
+        organizations,
+        project,
+      ]
+    );
+
+
+  const organizationRole =
+    useMemo(
+      () =>
+        getOrganizationRole(
+          organization,
+          organizationMembers,
+          currentUser
+        ),
+      [
+        organization,
+        organizationMembers,
+        currentUser,
+      ]
+    );
+
+
   const canManage =
     useMemo(
       () =>
-        Boolean(
-          project &&
-          currentUser &&
-          canManageWorkspaceProject(
-            currentUser,
-            project,
-            organizations
-          )
-        ),
+        organizationRole ===
+          ORGANIZATION_ROLES.OWNER ||
+        organizationRole ===
+          ORGANIZATION_ROLES.ADMIN,
       [
-        project,
-        currentUser,
-        organizations,
+        organizationRole,
       ]
     );
 
@@ -1347,6 +1626,7 @@ function ProjectResources() {
 
 
 export default ProjectResources;
+
 
 
 

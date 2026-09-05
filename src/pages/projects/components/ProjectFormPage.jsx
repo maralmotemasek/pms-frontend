@@ -39,23 +39,26 @@ import {
 
 import {
   getMyOrganizations,
+  getOrganizationMembers,
 } from "../../../services/organizationService";
 
 import {
-  loadOrganizationMembers,
-} from "../../../data/organizationUiMockData";
+  addProjectMember,
+  createProject,
+  getOrganizationProjects,
+  getProjectMembers,
+  normalizeProject,
+  normalizeProjectMember,
+  removeProjectMember,
+  updateProject,
+  updateProjectMemberRole,
+} from "../../../services/projectService";
 
 import {
   ORGANIZATION_ROLES,
   PROJECT_ROLES,
   PROJECT_ROLE_LABELS,
 } from "../../../constants/roles";
-
-import {
-  createWorkspaceProject,
-  getWorkspaceProjectById,
-  updateWorkspaceProject,
-} from "../../../data/projectWorkspaceStore";
 
 import "../CreateProject.css";
 
@@ -82,7 +85,16 @@ const ALLOWED_EXTENSIONS = [
 ];
 
 
-function isAllowedFile(file) {
+const UNIQUE_PROJECT_ROLES =
+  new Set([
+    PROJECT_ROLES.MANAGER,
+    PROJECT_ROLES.TEAM_LEAD,
+  ]);
+
+
+function isAllowedFile(
+  file
+) {
   const fileName =
     file.name.toLowerCase();
 
@@ -97,6 +109,7 @@ function isAllowedFile(file) {
 
 function getOrganizationRole(
   organization,
+  members,
   user
 ) {
   if (
@@ -107,11 +120,16 @@ function getOrganizationRole(
   }
 
 
-  const members =
-    loadOrganizationMembers(
-      organization,
-      user
-    );
+  if (
+    Number(
+      organization.owner_id
+    ) ===
+    Number(
+      user.id
+    )
+  ) {
+    return ORGANIZATION_ROLES.OWNER;
+  }
 
 
   return (
@@ -120,9 +138,152 @@ function getOrganizationRole(
         Number(
           member.user_id
         ) ===
-        Number(user.id)
-    )?.role || null
+        Number(
+          user.id
+        )
+    )?.role ||
+    null
   );
+}
+
+
+function getOrganizationMemberUser(
+  member,
+  currentUser
+) {
+  if (!member) {
+    return null;
+  }
+
+
+  if (
+    Number(
+      member.user_id
+    ) ===
+    Number(
+      currentUser?.id
+    )
+  ) {
+    return currentUser;
+  }
+
+
+  return {
+    full_name:
+      member.full_name ||
+      member.user?.full_name ||
+      member.username ||
+      member.user?.username ||
+      `کاربر #${member.user_id}`,
+
+    username:
+      member.username ||
+      member.user?.username ||
+      "",
+  };
+}
+
+
+function backendDateToDate(
+  value
+) {
+  if (!value) {
+    return null;
+  }
+
+
+  const parts =
+    String(value)
+      .split("-")
+      .map(Number);
+
+
+  if (
+    parts.length !== 3 ||
+    parts.some(
+      (part) =>
+        Number.isNaN(part)
+    )
+  ) {
+    return null;
+  }
+
+
+  return new Date(
+    parts[0],
+    parts[1] - 1,
+    parts[2]
+  );
+}
+
+
+function formatDateForApi(
+  value
+) {
+  if (!value) {
+    return null;
+  }
+
+
+  if (
+    typeof value ===
+      "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(
+      value
+    )
+  ) {
+    return value;
+  }
+
+
+  let date = null;
+
+
+  if (
+    typeof value?.toDate ===
+    "function"
+  ) {
+    date =
+      value.toDate();
+  } else if (
+    value instanceof Date
+  ) {
+    date =
+      value;
+  }
+
+
+  if (
+    !date ||
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      "0"
+    );
+
+
+  return `${year}-${month}-${day}`;
 }
 
 
@@ -139,14 +300,6 @@ function ProjectFormPage({
 
   const isEditing =
     mode === "edit";
-
-
-  const existingProject =
-    isEditing
-      ? getWorkspaceProjectById(
-          id
-        )
-      : null;
 
 
   const fileInputRef =
@@ -166,6 +319,24 @@ function ProjectFormPage({
 
 
   const [
+    organizationMembers,
+    setOrganizationMembers,
+  ] = useState([]);
+
+
+  const [
+    existingProject,
+    setExistingProject,
+  ] = useState(null);
+
+
+  const [
+    originalMembers,
+    setOriginalMembers,
+  ] = useState([]);
+
+
+  const [
     loadingAccess,
     setLoadingAccess,
   ] = useState(true);
@@ -174,24 +345,13 @@ function ProjectFormPage({
   const [
     selectedOrganizationId,
     setSelectedOrganizationId,
-  ] = useState(
-    existingProject
-      ?.organizationId
-      ? String(
-          existingProject
-            .organizationId
-        )
-      : ""
-  );
+  ] = useState("");
 
 
   const [
     selectedMembers,
     setSelectedMembers,
-  ] = useState(
-    existingProject?.members ||
-    []
-  );
+  ] = useState([]);
 
 
   const [
@@ -203,10 +363,7 @@ function ProjectFormPage({
   const [
     documents,
     setDocuments,
-  ] = useState(
-    existingProject?.documents ||
-    []
-  );
+  ] = useState([]);
 
 
   const [
@@ -221,12 +378,19 @@ function ProjectFormPage({
   ] = useState("");
 
 
+  const [
+    requestError,
+    setRequestError,
+  ] = useState("");
+
+
   const {
     register,
     control,
     handleSubmit,
     watch,
     getValues,
+    reset,
 
     formState: {
       errors,
@@ -234,41 +398,26 @@ function ProjectFormPage({
     },
   } = useForm({
     defaultValues: {
-      title:
-        existingProject?.title ||
-        "",
-
-      description:
-        existingProject
-          ?.description ||
-        "",
-
-      budget:
-        existingProject?.budget ||
-        "",
-
-      startDate:
-        existingProject
-          ?.startDate ||
-        null,
-
-      endDate:
-        existingProject
-          ?.endDate ||
-        null,
+      title: "",
+      description: "",
+      budget: "",
+      startDate: null,
+      endDate: null,
     },
   });
 
 
   const startDate =
-    watch("startDate");
+    watch(
+      "startDate"
+    );
 
 
   useEffect(() => {
     const loadAccess =
       async () => {
-
         setLoadingAccess(true);
+        setRequestError("");
 
 
         try {
@@ -282,30 +431,84 @@ function ProjectFormPage({
             ]);
 
 
+          const safeOrganizations =
+            Array.isArray(
+              organizationList
+            )
+              ? organizationList
+              : [];
+
+
           setCurrentUser(
             user
           );
 
 
-          const allowedOrganizations =
-            organizationList.filter(
-              (organization) => {
+          const organizationData =
+            await Promise.all(
+              safeOrganizations.map(
+                async (
+                  organization
+                ) => {
+                  try {
+                    const members =
+                      await getOrganizationMembers(
+                        organization.id
+                      );
 
-                const role =
-                  getOrganizationRole(
-                    organization,
-                    user
-                  );
+                    return {
+                      organization,
+                      members:
+                        Array.isArray(
+                          members
+                        )
+                          ? members
+                          : [],
+                    };
+                  } catch (error) {
+                    console.error(
+                      `Load organization ${organization.id} members error:`,
+                      error
+                    );
 
-
-                return (
-                  role ===
-                    ORGANIZATION_ROLES.OWNER ||
-                  role ===
-                    ORGANIZATION_ROLES.ADMIN
-                );
-              }
+                    return {
+                      organization,
+                      members: [],
+                    };
+                  }
+                }
+              )
             );
+
+
+          const allowedOrganizations =
+            organizationData
+              .filter(
+                ({
+                  organization,
+                  members,
+                }) => {
+                  const role =
+                    getOrganizationRole(
+                      organization,
+                      members,
+                      user
+                    );
+
+                  return (
+                    role ===
+                      ORGANIZATION_ROLES.OWNER ||
+                    role ===
+                      ORGANIZATION_ROLES.ADMIN
+                  );
+                }
+              )
+              .map(
+                ({
+                  organization,
+                }) =>
+                  organization
+              );
 
 
           setOrganizations(
@@ -313,22 +516,227 @@ function ProjectFormPage({
           );
 
 
-          if (
-            !selectedOrganizationId &&
-            allowedOrganizations
-              .length === 1
-          ) {
-            setSelectedOrganizationId(
-              String(
-                allowedOrganizations[0]
-                  .id
-              )
-            );
+          if (!isEditing) {
+            if (
+              allowedOrganizations.length ===
+              1
+            ) {
+              const organization =
+                allowedOrganizations[0];
+
+              setSelectedOrganizationId(
+                String(
+                  organization.id
+                )
+              );
+
+              const found =
+                organizationData.find(
+                  (item) =>
+                    Number(
+                      item.organization.id
+                    ) ===
+                    Number(
+                      organization.id
+                    )
+                );
+
+              setOrganizationMembers(
+                found?.members ||
+                []
+              );
+            }
+
+            return;
           }
+
+
+          let foundProject =
+            null;
+
+          let foundOrganization =
+            null;
+
+          let foundOrganizationMembers =
+            [];
+
+
+          for (
+            const organization
+            of allowedOrganizations
+          ) {
+            try {
+              const projects =
+                await getOrganizationProjects(
+                  organization.id
+                );
+
+              const matched =
+                (
+                  Array.isArray(
+                    projects
+                  )
+                    ? projects
+                    : []
+                ).find(
+                  (project) =>
+                    String(
+                      project.id
+                    ) ===
+                    String(
+                      id
+                    )
+                );
+
+
+              if (matched) {
+                foundProject =
+                  matched;
+
+                foundOrganization =
+                  organization;
+
+                foundOrganizationMembers =
+                  organizationData.find(
+                    (item) =>
+                      Number(
+                        item.organization.id
+                      ) ===
+                      Number(
+                        organization.id
+                      )
+                  )?.members ||
+                  [];
+
+                break;
+              }
+            } catch (error) {
+              console.error(
+                `Find project ${id} in organization ${organization.id} error:`,
+                error
+              );
+            }
+          }
+
+
+          if (
+            !foundProject ||
+            !foundOrganization
+          ) {
+            setRequestError(
+              "پروژه موردنظر پیدا نشد یا اجازه ویرایش آن را ندارید."
+            );
+
+            return;
+          }
+
+
+          const rawMembers =
+            await getProjectMembers(
+              foundOrganization.id,
+              foundProject.id
+            );
+
+
+          const normalizedMembers =
+            (
+              Array.isArray(
+                rawMembers
+              )
+                ? rawMembers
+                : []
+            ).map(
+              (member) => {
+                const organizationMember =
+                  foundOrganizationMembers.find(
+                    (item) =>
+                      Number(
+                        item.user_id
+                      ) ===
+                      Number(
+                        member.user_id
+                      )
+                  );
+
+
+                return normalizeProjectMember(
+                  member,
+                  getOrganizationMemberUser(
+                    organizationMember,
+                    user
+                  )
+                );
+              }
+            );
+
+
+          const normalizedProject =
+            normalizeProject(
+              foundProject,
+              {
+                organizationName:
+                  foundOrganization.name,
+
+                members:
+                  normalizedMembers,
+              }
+            );
+
+
+          setExistingProject(
+            normalizedProject
+          );
+
+          setSelectedOrganizationId(
+            String(
+              foundOrganization.id
+            )
+          );
+
+          setOrganizationMembers(
+            foundOrganizationMembers
+          );
+
+          setSelectedMembers(
+            normalizedMembers
+          );
+
+          setOriginalMembers(
+            normalizedMembers
+          );
+
+
+          reset({
+            title:
+              normalizedProject.title ||
+              "",
+
+            description:
+              normalizedProject.description ||
+              "",
+
+            budget:
+              normalizedProject.budget ??
+              "",
+
+            startDate:
+              backendDateToDate(
+                normalizedProject.startDate
+              ),
+
+            endDate:
+              backendDateToDate(
+                normalizedProject.endDate
+              ),
+          });
         } catch (error) {
           console.error(
-            "Project access error:",
+            "Project form load error:",
             error
+          );
+
+          setRequestError(
+            "دریافت اطلاعات پروژه با خطا مواجه شد."
           );
         } finally {
           setLoadingAccess(false);
@@ -337,7 +745,11 @@ function ProjectFormPage({
 
 
     loadAccess();
-  }, []);
+  }, [
+    id,
+    isEditing,
+    reset,
+  ]);
 
 
   const selectedOrganization =
@@ -351,7 +763,8 @@ function ProjectFormPage({
             String(
               selectedOrganizationId
             )
-        ) || null,
+        ) ||
+        null,
       [
         organizations,
         selectedOrganizationId,
@@ -359,34 +772,53 @@ function ProjectFormPage({
     );
 
 
-  const organizationMembers =
-    useMemo(
-      () => {
+  useEffect(() => {
+    if (
+      !selectedOrganization ||
+      isEditing
+    ) {
+      return;
+    }
 
-        if (
-          !selectedOrganization ||
-          !currentUser
-        ) {
-          return [];
+
+    const loadMembers =
+      async () => {
+        try {
+          const members =
+            await getOrganizationMembers(
+              selectedOrganization.id
+            );
+
+          setOrganizationMembers(
+            Array.isArray(
+              members
+            )
+              ? members
+              : []
+          );
+        } catch (error) {
+          console.error(
+            "Load selected organization members error:",
+            error
+          );
+
+          setOrganizationMembers(
+            []
+          );
         }
+      };
 
 
-        return loadOrganizationMembers(
-          selectedOrganization,
-          currentUser
-        );
-      },
-      [
-        selectedOrganization,
-        currentUser,
-      ]
-    );
+    loadMembers();
+  }, [
+    selectedOrganization,
+    isEditing,
+  ]);
 
 
   const availableMembers =
     useMemo(
       () => {
-
         const selectedIds =
           new Set(
             selectedMembers.map(
@@ -406,7 +838,6 @@ function ProjectFormPage({
 
         return organizationMembers.filter(
           (member) => {
-
             if (
               selectedIds.has(
                 Number(
@@ -423,13 +854,33 @@ function ProjectFormPage({
             }
 
 
+            const fullName =
+              member.full_name ||
+              member.user?.full_name ||
+              "";
+
+            const username =
+              member.username ||
+              member.user?.username ||
+              "";
+
+
             return (
-              member.username
-                ?.toLowerCase()
-                .includes(search) ||
-              member.full_name
-                ?.toLowerCase()
-                .includes(search)
+              fullName
+                .toLowerCase()
+                .includes(
+                  search
+                ) ||
+              username
+                .toLowerCase()
+                .includes(
+                  search
+                ) ||
+              String(
+                member.user_id
+              ).includes(
+                search
+              )
             );
           }
         );
@@ -443,19 +894,58 @@ function ProjectFormPage({
 
 
   const handleOrganizationChange =
-    (event) => {
+    async (
+      event
+    ) => {
+      const value =
+        event.target.value;
+
 
       setSelectedOrganizationId(
-        event.target.value
+        value
       );
 
       setSelectedMembers([]);
+      setOriginalMembers([]);
       setMemberSearch("");
+      setOrganizationMembers([]);
+
+
+      if (!value) {
+        return;
+      }
+
+
+      try {
+        const members =
+          await getOrganizationMembers(
+            value
+          );
+
+        setOrganizationMembers(
+          Array.isArray(
+            members
+          )
+            ? members
+            : []
+        );
+      } catch (error) {
+        console.error(
+          "Load organization members error:",
+          error
+        );
+      }
     };
 
 
   const addMember =
     (member) => {
+      const userData =
+        getOrganizationMemberUser(
+          member,
+          currentUser
+        );
+
 
       setSelectedMembers(
         (
@@ -467,11 +957,11 @@ function ProjectFormPage({
               member.user_id,
 
             fullName:
-              member.full_name ||
-              member.username,
+              userData?.full_name ||
+              `کاربر #${member.user_id}`,
 
             username:
-              member.username ||
+              userData?.username ||
               "",
 
             role:
@@ -483,8 +973,9 @@ function ProjectFormPage({
 
 
   const removeMember =
-    (userId) => {
-
+    (
+      userId
+    ) => {
       setSelectedMembers(
         (
           previousMembers
@@ -494,7 +985,9 @@ function ProjectFormPage({
               Number(
                 member.userId
               ) !==
-              Number(userId)
+              Number(
+                userId
+              )
           )
       );
     };
@@ -505,7 +998,6 @@ function ProjectFormPage({
       userId,
       role
     ) => {
-
       setSelectedMembers(
         (
           previousMembers
@@ -515,7 +1007,9 @@ function ProjectFormPage({
               Number(
                 member.userId
               ) ===
-              Number(userId)
+              Number(
+                userId
+              )
                 ? {
                     ...member,
                     role,
@@ -527,24 +1021,26 @@ function ProjectFormPage({
 
 
   const handleFiles =
-    (fileList) => {
-
+    (
+      fileList
+    ) => {
       const selectedFiles =
         Array.from(
-          fileList || []
+          fileList ||
+          []
         );
 
 
       const validFiles = [];
-
       const messages = [];
 
 
       selectedFiles.forEach(
         (file) => {
-
           if (
-            !isAllowedFile(file)
+            !isAllowedFile(
+              file
+            )
           ) {
             messages.push(
               `فرمت فایل «${file.name}» مجاز نیست.`
@@ -584,38 +1080,222 @@ function ProjectFormPage({
 
 
       setFileError(
-        messages.join(" ")
+        messages.join(
+          " "
+        )
       );
     };
 
 
-  const formatDate =
-    (value) => {
-
-      if (!value) {
-        return null;
-      }
-
-
-      if (
-        typeof value ===
-        "string"
+  const validateUniqueRoles =
+    () => {
+      for (
+        const role
+        of UNIQUE_PROJECT_ROLES
       ) {
-        return value;
+        const count =
+          selectedMembers.filter(
+            (member) =>
+              member.role ===
+              role
+          ).length;
+
+
+        if (
+          count > 1
+        ) {
+          setFormMessage(
+            role ===
+              PROJECT_ROLES.MANAGER
+              ? "هر پروژه فقط می‌تواند یک مدیر پروژه داشته باشد."
+              : "هر پروژه فقط می‌تواند یک سرپرست تیم داشته باشد."
+          );
+
+          return false;
+        }
       }
 
 
-      return (
-        value.format?.(
-          "YYYY/MM/DD"
-        ) || null
-      );
+      return true;
+    };
+
+
+  const syncEditedMembers =
+    async (
+      organizationId,
+      projectId
+    ) => {
+      const originalMap =
+        new Map(
+          originalMembers.map(
+            (member) => [
+              Number(
+                member.userId
+              ),
+              member,
+            ]
+          )
+        );
+
+
+      const selectedMap =
+        new Map(
+          selectedMembers.map(
+            (member) => [
+              Number(
+                member.userId
+              ),
+              member,
+            ]
+          )
+        );
+
+
+      const removedMembers =
+        originalMembers.filter(
+          (member) =>
+            !selectedMap.has(
+              Number(
+                member.userId
+              )
+            )
+        );
+
+
+      for (
+        const member
+        of removedMembers
+      ) {
+        await removeProjectMember(
+          organizationId,
+          projectId,
+          member.userId
+        );
+      }
+
+
+      const demotions =
+        selectedMembers.filter(
+          (member) => {
+            const original =
+              originalMap.get(
+                Number(
+                  member.userId
+                )
+              );
+
+
+            if (!original) {
+              return false;
+            }
+
+
+            return (
+              original.role !==
+                member.role &&
+              UNIQUE_PROJECT_ROLES.has(
+                original.role
+              ) &&
+              !UNIQUE_PROJECT_ROLES.has(
+                member.role
+              )
+            );
+          }
+        );
+
+
+      for (
+        const member
+        of demotions
+      ) {
+        await updateProjectMemberRole(
+          organizationId,
+          projectId,
+          member.userId,
+          member.role
+        );
+      }
+
+
+      const otherRoleChanges =
+        selectedMembers.filter(
+          (member) => {
+            const original =
+              originalMap.get(
+                Number(
+                  member.userId
+                )
+              );
+
+
+            if (!original) {
+              return false;
+            }
+
+
+            if (
+              original.role ===
+              member.role
+            ) {
+              return false;
+            }
+
+
+            return !demotions.some(
+              (item) =>
+                Number(
+                  item.userId
+                ) ===
+                Number(
+                  member.userId
+                )
+            );
+          }
+        );
+
+
+      for (
+        const member
+        of otherRoleChanges
+      ) {
+        await updateProjectMemberRole(
+          organizationId,
+          projectId,
+          member.userId,
+          member.role
+        );
+      }
+
+
+      const addedMembers =
+        selectedMembers.filter(
+          (member) =>
+            !originalMap.has(
+              Number(
+                member.userId
+              )
+            )
+        );
+
+
+      for (
+        const member
+        of addedMembers
+      ) {
+        await addProjectMember(
+          organizationId,
+          projectId,
+          member.userId,
+          member.role
+        );
+      }
     };
 
 
   const onSubmit =
-    async (data) => {
-
+    async (
+      data
+    ) => {
       setFormMessage("");
 
 
@@ -630,105 +1310,176 @@ function ProjectFormPage({
       }
 
 
+      if (
+        !validateUniqueRoles()
+      ) {
+        return;
+      }
+
+
       const projectData = {
-        organizationId:
-          selectedOrganization.id,
-
-        organizationName:
-          selectedOrganization.name,
-
         title:
           data.title.trim(),
 
         description:
-          data.description?.trim() ||
+          data.description
+            ?.trim() ||
           "",
 
         budget:
-          data.budget || "0",
+          data.budget ===
+          ""
+            ? null
+            : data.budget,
 
         startDate:
-          formatDate(
+          formatDateForApi(
             data.startDate
           ),
 
         endDate:
-          formatDate(
+          formatDateForApi(
             data.endDate
-          ),
-
-        members:
-          selectedMembers,
-
-        documents:
-          documents.map(
-            (
-              document,
-              index
-            ) => ({
-              id:
-                document.id ||
-                `${Date.now()}-${index}`,
-
-              name:
-                document.name,
-
-              size:
-                document.size,
-
-              type:
-                document.type,
-
-              isExisting:
-                Boolean(
-                  document.isExisting
-                ),
-            })
           ),
       };
 
 
-      let savedProject;
+      try {
+        let savedProject;
 
 
-      if (isEditing) {
-        savedProject =
-          updateWorkspaceProject(
-            existingProject.id,
-            projectData
+        if (
+          isEditing
+        ) {
+          if (
+            !existingProject
+          ) {
+            setFormMessage(
+              "پروژه موردنظر برای ویرایش پیدا نشد."
+            );
+
+            return;
+          }
+
+
+          savedProject =
+            await updateProject(
+              selectedOrganization.id,
+              existingProject.id,
+              projectData
+            );
+
+
+          await syncEditedMembers(
+            selectedOrganization.id,
+            existingProject.id
           );
-      } else {
-        savedProject =
-          createWorkspaceProject(
-            projectData
+
+
+          setFormMessage(
+            "تغییرات پروژه با موفقیت ذخیره شد."
           );
-      }
+        } else {
+          savedProject =
+            await createProject(
+              selectedOrganization.id,
+              projectData
+            );
 
 
-      setFormMessage(
-        isEditing
-          ? "تغییرات پروژه ذخیره شد."
-          : "پروژه با موفقیت ایجاد شد."
-      );
+          for (
+            const member
+            of selectedMembers
+          ) {
+            await addProjectMember(
+              selectedOrganization.id,
+              savedProject.id,
+              member.userId,
+              member.role
+            );
+          }
 
 
-      setTimeout(() => {
-        navigate(
-          `/projects/${savedProject.id}`
+          setFormMessage(
+            "پروژه با موفقیت ایجاد شد."
+          );
+        }
+
+
+        if (
+          documents.length >
+          0
+        ) {
+          console.warn(
+            "Project documents were selected, but the backend currently has no project attachment endpoint."
+          );
+        }
+
+
+        window.setTimeout(
+          () => {
+            navigate(
+              `/projects/${savedProject.id}`
+            );
+          },
+          500
         );
-      }, 500);
+      } catch (error) {
+        console.error(
+          "Save project error:",
+          error
+        );
+
+
+        const detail =
+          error?.response
+            ?.data
+            ?.detail;
+
+
+        if (
+          error?.response
+            ?.status ===
+          409
+        ) {
+          setFormMessage(
+            detail ||
+            "این نقش پروژه‌ای قبلاً به عضو دیگری اختصاص داده شده است."
+          );
+
+          return;
+        }
+
+
+        if (
+          error?.response
+            ?.status ===
+          403
+        ) {
+          setFormMessage(
+            "شما اجازه انجام این عملیات را ندارید."
+          );
+
+          return;
+        }
+
+
+        setFormMessage(
+          detail ||
+          "ذخیره پروژه با خطا مواجه شد."
+        );
+      }
     };
 
 
   if (
-    isEditing &&
-    !existingProject
+    loadingAccess
   ) {
     return (
       <section className="create-project-page">
 
         <div className="create-project-card">
-          پروژه موردنظر پیدا نشد.
+          در حال دریافت اطلاعات پروژه...
         </div>
 
       </section>
@@ -736,12 +1487,34 @@ function ProjectFormPage({
   }
 
 
-  if (loadingAccess) {
+  if (
+    requestError
+  ) {
     return (
       <section className="create-project-page">
 
         <div className="create-project-card">
-          در حال بررسی دسترسی سازمان...
+
+          <h2>
+            پروژه در دسترس نیست
+          </h2>
+
+          <p>
+            {requestError}
+          </p>
+
+          <button
+            type="button"
+            className="back-projects-button"
+            onClick={() =>
+              navigate(
+                "/projects"
+              )
+            }
+          >
+            بازگشت
+          </button>
+
         </div>
 
       </section>
@@ -853,13 +1626,18 @@ function ProjectFormPage({
                 onChange={
                   handleOrganizationChange
                 }
+                disabled={
+                  isEditing
+                }
               >
                 <option value="">
                   انتخاب سازمان
                 </option>
 
                 {organizations.map(
-                  (organization) => (
+                  (
+                    organization
+                  ) => (
                     <option
                       key={
                         organization.id
@@ -898,9 +1676,15 @@ function ProjectFormPage({
                     "عنوان پروژه الزامی است.",
 
                   minLength: {
-                    value: 3,
+                    value: 2,
                     message:
-                      "عنوان پروژه باید حداقل ۳ کاراکتر باشد.",
+                      "عنوان پروژه باید حداقل ۲ کاراکتر باشد.",
+                  },
+
+                  maxLength: {
+                    value: 150,
+                    message:
+                      "عنوان پروژه حداکثر می‌تواند ۱۵۰ کاراکتر باشد.",
                   },
                 }
               )}
@@ -908,7 +1692,10 @@ function ProjectFormPage({
 
             {errors.title && (
               <small className="project-form-error">
-                {errors.title.message}
+                {
+                  errors.title
+                    .message
+                }
               </small>
             )}
 
@@ -923,6 +1710,7 @@ function ProjectFormPage({
 
             <textarea
               rows="5"
+              maxLength="2000"
               placeholder="هدف و توضیحات پروژه..."
               {...register(
                 "description"
@@ -979,10 +1767,11 @@ function ProjectFormPage({
                         event
                       ) =>
                         setMemberSearch(
-                          event.target.value
+                          event.target
+                            .value
                         )
                       }
-                      placeholder="جستجوی عضو سازمان..."
+                      placeholder="جستجو با نام، نام کاربری یا شناسه..."
                     />
 
                   </div>
@@ -997,42 +1786,60 @@ function ProjectFormPage({
                       </div>
                     ) : (
                       availableMembers.map(
-                        (member) => (
-                          <div
-                            className="project-team-candidate"
-                            key={
-                              member.user_id
-                            }
-                          >
+                        (
+                          member
+                        ) => {
+                          const userData =
+                            getOrganizationMemberUser(
+                              member,
+                              currentUser
+                            );
 
-                            <div>
-                              <strong>
-                                {member.full_name ||
-                                  member.username}
-                              </strong>
 
-                              <span>
-                                @{member.username}
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                addMember(
-                                  member
-                                )
+                          return (
+                            <div
+                              className="project-team-candidate"
+                              key={
+                                member.user_id
                               }
                             >
-                              <UserPlus
-                                size={16}
-                              />
 
-                              افزودن
-                            </button>
+                              <div>
 
-                          </div>
-                        )
+                                <strong>
+                                  {
+                                    userData?.full_name ||
+                                    `کاربر #${member.user_id}`
+                                  }
+                                </strong>
+
+                                <span>
+                                  {userData?.username
+                                    ? `@${userData.username}`
+                                    : `شناسه کاربر: ${member.user_id}`}
+                                </span>
+
+                              </div>
+
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  addMember(
+                                    member
+                                  )
+                                }
+                              >
+                                <UserPlus
+                                  size={16}
+                                />
+
+                                افزودن
+                              </button>
+
+                            </div>
+                          );
+                        }
                       )
                     )}
 
@@ -1045,8 +1852,11 @@ function ProjectFormPage({
 
                   <div className="project-selected-team-header">
                     تیم پروژه
+
                     <span>
-                      {selectedMembers.length}
+                      {
+                        selectedMembers.length
+                      }
                       {" "}
                       عضو
                     </span>
@@ -1060,7 +1870,9 @@ function ProjectFormPage({
                     </div>
                   ) : (
                     selectedMembers.map(
-                      (member) => (
+                      (
+                        member
+                      ) => (
                         <div
                           className="project-selected-member"
                           key={
@@ -1077,7 +1889,9 @@ function ProjectFormPage({
                             </strong>
 
                             <span>
-                              @{member.username}
+                              {member.username
+                                ? `@${member.username}`
+                                : `شناسه کاربر: ${member.userId}`}
                             </span>
 
                           </div>
@@ -1092,8 +1906,7 @@ function ProjectFormPage({
                             ) =>
                               changeMemberRole(
                                 member.userId,
-                                event
-                                  .target
+                                event.target
                                   .value
                               )
                             }
@@ -1102,7 +1915,9 @@ function ProjectFormPage({
                             {Object.values(
                               PROJECT_ROLES
                             ).map(
-                              (role) => (
+                              (
+                                role
+                              ) => (
                                 <option
                                   key={
                                     role
@@ -1159,6 +1974,7 @@ function ProjectFormPage({
             <input
               type="number"
               min="0"
+              step="any"
               placeholder="مثلاً 500000000"
               {...register(
                 "budget",
@@ -1172,6 +1988,15 @@ function ProjectFormPage({
               )}
             />
 
+            {errors.budget && (
+              <small className="project-form-error">
+                {
+                  errors.budget
+                    .message
+                }
+              </small>
+            )}
+
           </div>
 
 
@@ -1184,7 +2009,9 @@ function ProjectFormPage({
 
             <Controller
               name="startDate"
-              control={control}
+              control={
+                control
+              }
               rules={{
                 required:
                   "تاریخ شروع الزامی است.",
@@ -1213,6 +2040,15 @@ function ProjectFormPage({
               )}
             />
 
+            {errors.startDate && (
+              <small className="project-form-error">
+                {
+                  errors.startDate
+                    .message
+                }
+              </small>
+            )}
+
           </div>
 
 
@@ -1225,7 +2061,9 @@ function ProjectFormPage({
 
             <Controller
               name="endDate"
-              control={control}
+              control={
+                control
+              }
               rules={{
                 required:
                   "تاریخ پایان الزامی است.",
@@ -1233,7 +2071,6 @@ function ProjectFormPage({
                 validate: (
                   value
                 ) => {
-
                   const start =
                     getValues(
                       "startDate"
@@ -1242,23 +2079,42 @@ function ProjectFormPage({
 
                   if (
                     !value ||
-                    !start ||
-                    typeof value.toDate !==
-                      "function" ||
-                    typeof start.toDate !==
-                      "function"
+                    !start
+                  ) {
+                    return true;
+                  }
+
+
+                  const endDateValue =
+                    typeof value.toDate ===
+                    "function"
+                      ? value.toDate()
+                      : value;
+
+                  const startDateValue =
+                    typeof start.toDate ===
+                    "function"
+                      ? start.toDate()
+                      : start;
+
+
+                  if (
+                    !(
+                      endDateValue
+                      instanceof Date
+                    ) ||
+                    !(
+                      startDateValue
+                      instanceof Date
+                    )
                   ) {
                     return true;
                   }
 
 
                   return (
-                    value
-                      .toDate()
-                      .getTime() >=
-                      start
-                        .toDate()
-                        .getTime() ||
+                    endDateValue.getTime() >=
+                      startDateValue.getTime() ||
                     "تاریخ پایان باید بعد از تاریخ شروع باشد."
                   );
                 },
@@ -1290,6 +2146,15 @@ function ProjectFormPage({
                 />
               )}
             />
+
+            {errors.endDate && (
+              <small className="project-form-error">
+                {
+                  errors.endDate
+                    .message
+                }
+              </small>
+            )}
 
           </div>
 
@@ -1346,7 +2211,8 @@ function ProjectFormPage({
                   event
                 ) => {
                   handleFiles(
-                    event.target.files
+                    event.target
+                      .files
                   );
 
                   event.target.value =
@@ -1357,16 +2223,22 @@ function ProjectFormPage({
             </div>
 
 
+            <small className="project-form-hint">
+              فعلاً endpoint ذخیره مستندات پروژه در بک‌اند وجود ندارد؛ انتخاب فایل فقط در همین فرم باقی می‌ماند.
+            </small>
+
+
             {fileError && (
               <small className="project-form-error">
-                {fileError}
+                {
+                  fileError
+                }
               </small>
             )}
 
 
             {documents.length >
               0 && (
-
               <div className="uploaded-documents">
 
                 {documents.map(
@@ -1394,6 +2266,7 @@ function ProjectFormPage({
                         </strong>
 
                       </div>
+
 
                       <button
                         type="button"
@@ -1431,7 +2304,9 @@ function ProjectFormPage({
 
           {formMessage && (
             <div className="project-form-message">
-              {formMessage}
+              {
+                formMessage
+              }
             </div>
           )}
 
@@ -1462,9 +2337,11 @@ function ProjectFormPage({
                 size={18}
               />
 
-              {isEditing
-                ? "ذخیره تغییرات"
-                : "ایجاد پروژه"}
+              {isSubmitting
+                ? "در حال ذخیره..."
+                : isEditing
+                  ? "ذخیره تغییرات"
+                  : "ایجاد پروژه"}
             </button>
 
           </div>

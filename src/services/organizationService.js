@@ -43,6 +43,14 @@ export const createOrganization = async (data) => {
   return response.data;
 };
 
+export const deleteOrganization = async (
+  organizationId
+) => {
+  await api.delete(
+    `/organizations/${organizationId}`
+  );
+};
+
 export const getOrganizationMembers = async (
   organizationId
 ) => {
@@ -129,3 +137,5 @@ export const updateOrganizationMemberRole = async (
     response.data
   );
 };
+
+

@@ -12,6 +12,7 @@ import {
   Building2,
   Filter,
   Plus,
+  RefreshCw,
   Search,
 } from "lucide-react";
 
@@ -21,35 +22,151 @@ import {
 
 import {
   getMyOrganizations,
+  getOrganizationMembers,
 } from "../../services/organizationService";
 
 import {
-  getProjectManagers,
-  getProjectMembership,
-  getWorkspaceProjects,
-  normalizeProjectRole,
-} from "../../data/projectWorkspaceStore";
+  fromBackendProjectRole,
+  getMyProjects,
+  getOrganizationProjects,
+  getProjectMembers,
+  normalizeProject,
+  normalizeProjectMember,
+} from "../../services/projectService";
 
 import {
+  ORGANIZATION_ROLES,
   PROJECT_ROLES,
+  PROJECT_ROLE_LABELS,
 } from "../../constants/roles";
-
-import {
-  canCreateProjectFromOrganizations,
-  canViewWorkspaceProject,
-  getProjectOrganizationRole,
-  getProjectRoleLabel,
-} from "../../utils/projectAccess";
 
 import "./Projects.css";
 
 
 const STATUS_OPTIONS = {
   all: "همه وضعیت‌ها",
+  planning: "در برنامه‌ریزی",
   "in-progress": "در حال انجام",
   delayed: "با تأخیر",
   review: "در انتظار تأیید",
   completed: "تکمیل شده",
+};
+
+
+const formatPersianDate = (value) => {
+  if (!value) {
+    return "-";
+  }
+
+  const parts =
+    String(value)
+      .trim()
+      .split("-")
+      .map(Number);
+
+  if (
+    parts.length !== 3 ||
+    parts.some(
+      (part) =>
+        Number.isNaN(part)
+    )
+  ) {
+    return String(value);
+  }
+
+  const [
+    year,
+    month,
+    day,
+  ] = parts;
+
+  const date =
+    new Date(
+      year,
+      month - 1,
+      day
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return String(value);
+  }
+
+  return new Intl.DateTimeFormat(
+    "fa-IR-u-ca-persian",
+    {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }
+  ).format(date);
+};
+
+
+const getOrganizationRole = (
+  organization,
+  members,
+  user
+) => {
+  if (
+    !organization ||
+    !user
+  ) {
+    return null;
+  }
+
+  if (
+    Number(
+      organization.owner_id
+    ) ===
+    Number(
+      user.id
+    )
+  ) {
+    return ORGANIZATION_ROLES.OWNER;
+  }
+
+  const membership =
+    members.find(
+      (member) =>
+        Number(
+          member.user_id
+        ) ===
+        Number(
+          user.id
+        )
+    );
+
+  return (
+    membership?.role ||
+    null
+  );
+};
+
+
+const getMemberUserData = (
+  organizationMember
+) => {
+  if (!organizationMember) {
+    return null;
+  }
+
+  return {
+    full_name:
+      organizationMember.full_name ||
+      organizationMember.user?.full_name ||
+      organizationMember.username ||
+      organizationMember.user?.username ||
+      "",
+
+    username:
+      organizationMember.username ||
+      organizationMember.user?.username ||
+      "",
+  };
 };
 
 
@@ -65,6 +182,11 @@ function Projects() {
   ] = useState([]);
 
   const [
+    organizationRoles,
+    setOrganizationRoles,
+  ] = useState({});
+
+  const [
     projects,
     setProjects,
   ] = useState([]);
@@ -73,6 +195,11 @@ function Projects() {
     loading,
     setLoading,
   ] = useState(true);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
 
   const [
     statusFilter,
@@ -90,88 +217,280 @@ function Projects() {
   ] = useState("");
 
 
-  useEffect(() => {
-    const loadPage =
-      async () => {
+  const loadPage =
+    async () => {
+      setLoading(true);
+      setError("");
 
-        setLoading(true);
+      try {
+        const [
+          user,
+          organizationList,
+          myProjects,
+        ] =
+          await Promise.all([
+            getCurrentUser(),
+            getMyOrganizations(),
+            getMyProjects()
+              .catch(() => []),
+          ]);
 
-        try {
-          const [
-            user,
-            organizationList,
-          ] =
-            await Promise.all([
-              getCurrentUser(),
-              getMyOrganizations(),
-            ]);
+        const safeOrganizations =
+          Array.isArray(
+            organizationList
+          )
+            ? organizationList
+            : [];
 
-          const safeOrganizations =
-            Array.isArray(
-              organizationList
+        const safeMyProjects =
+          Array.isArray(
+            myProjects
+          )
+            ? myProjects
+            : [];
+
+        setCurrentUser(user);
+
+        setOrganizations(
+          safeOrganizations
+        );
+
+
+        const myProjectRoles =
+          new Map(
+            safeMyProjects.map(
+              (project) => [
+                String(
+                  project.id
+                ),
+
+                fromBackendProjectRole(
+                  project.role
+                ),
+              ]
             )
-              ? organizationList
-              : [];
-
-          setCurrentUser(user);
-          setOrganizations(
-            safeOrganizations
           );
 
-          setProjects(
-            getWorkspaceProjects()
-          );
-        } catch (error) {
-          console.error(
-            "Load projects page error:",
-            error
-          );
-        } finally {
-          setLoading(false);
-        }
-      };
+
+        const organizationResults =
+          await Promise.all(
+            safeOrganizations.map(
+              async (
+                organization
+              ) => {
+
+                let organizationMembers =
+                  [];
+
+                let organizationProjects =
+                  [];
+
+                try {
+                  organizationMembers =
+                    await getOrganizationMembers(
+                      organization.id
+                    );
+                } catch (
+                  membersError
+                ) {
+                  console.error(
+                    `Load organization ${organization.id} members error:`,
+                    membersError
+                  );
+                }
 
 
+                try {
+                  organizationProjects =
+                    await getOrganizationProjects(
+                      organization.id
+                    );
+                } catch (
+                  projectsError
+                ) {
+                  console.error(
+                    `Load organization ${organization.id} projects error:`,
+                    projectsError
+                  );
+                }
+
+
+                const role =
+                  getOrganizationRole(
+                    organization,
+                    organizationMembers,
+                    user
+                  );
+
+
+                const normalizedProjects =
+                  await Promise.all(
+                    (
+                      Array.isArray(
+                        organizationProjects
+                      )
+                        ? organizationProjects
+                        : []
+                    ).map(
+                      async (
+                        rawProject
+                      ) => {
+
+                        let rawProjectMembers =
+                          [];
+
+                        try {
+                          rawProjectMembers =
+                            await getProjectMembers(
+                              organization.id,
+                              rawProject.id
+                            );
+                        } catch (
+                          projectMembersError
+                        ) {
+                          console.error(
+                            `Load project ${rawProject.id} members error:`,
+                            projectMembersError
+                          );
+                        }
+
+
+                        const normalizedMembers =
+                          (
+                            Array.isArray(
+                              rawProjectMembers
+                            )
+                              ? rawProjectMembers
+                              : []
+                          ).map(
+                            (
+                              member
+                            ) => {
+
+                              const organizationMember =
+                                organizationMembers.find(
+                                  (
+                                    item
+                                  ) =>
+                                    Number(
+                                      item.user_id
+                                    ) ===
+                                    Number(
+                                      member.user_id
+                                    )
+                                );
+
+
+                              return normalizeProjectMember(
+                                member,
+                                getMemberUserData(
+                                  organizationMember
+                                )
+                              );
+                            }
+                          );
+
+
+                        return normalizeProject(
+                          rawProject,
+                          {
+                            organizationName:
+                              organization.name,
+
+                            members:
+                              normalizedMembers,
+
+                            currentProjectRole:
+                              myProjectRoles.get(
+                                String(
+                                  rawProject.id
+                                )
+                              ) ||
+                              null,
+                          }
+                        );
+                      }
+                    )
+                  );
+
+
+                return {
+                  organizationId:
+                    organization.id,
+
+                  role,
+
+                  projects:
+                    normalizedProjects,
+                };
+              }
+            )
+          );
+
+
+        const nextOrganizationRoles =
+          {};
+
+        const allProjects =
+          [];
+
+        organizationResults.forEach(
+          (
+            result
+          ) => {
+            nextOrganizationRoles[
+              String(
+                result.organizationId
+              )
+            ] =
+              result.role;
+
+            allProjects.push(
+              ...result.projects
+            );
+          }
+        );
+
+
+        setOrganizationRoles(
+          nextOrganizationRoles
+        );
+
+        setProjects(
+          allProjects
+        );
+      } catch (requestError) {
+        console.error(
+          "Load projects page error:",
+          requestError
+        );
+
+        setError(
+          "دریافت پروژه‌ها با خطا مواجه شد."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+
+  useEffect(() => {
     loadPage();
   }, []);
-
-
-  const visibleProjects =
-    useMemo(
-      () => {
-
-        if (!currentUser) {
-          return [];
-        }
-
-        return projects.filter(
-          (project) =>
-            canViewWorkspaceProject(
-              currentUser,
-              project,
-              organizations
-            )
-        );
-      },
-      [
-        projects,
-        currentUser,
-        organizations,
-      ]
-    );
 
 
   const filteredProjects =
     useMemo(
       () => {
-
         const search =
           searchValue
             .trim()
             .toLowerCase();
 
-        return visibleProjects.filter(
-          (project) => {
+        return projects.filter(
+          (
+            project
+          ) => {
 
             if (
               statusFilter !==
@@ -181,6 +500,7 @@ function Projects() {
             ) {
               return false;
             }
+
 
             if (
               organizationFilter !==
@@ -193,23 +513,29 @@ function Projects() {
               return false;
             }
 
+
             if (!search) {
               return true;
             }
 
+
             return (
               project.title
                 ?.toLowerCase()
-                .includes(search) ||
+                .includes(
+                  search
+                ) ||
               project.organizationName
                 ?.toLowerCase()
-                .includes(search)
+                .includes(
+                  search
+                )
             );
           }
         );
       },
       [
-        visibleProjects,
+        projects,
         statusFilter,
         organizationFilter,
         searchValue,
@@ -218,9 +544,22 @@ function Projects() {
 
 
   const canCreate =
-    canCreateProjectFromOrganizations(
-      currentUser,
-      organizations
+    useMemo(
+      () =>
+        Object.values(
+          organizationRoles
+        ).some(
+          (
+            role
+          ) =>
+            role ===
+              ORGANIZATION_ROLES.OWNER ||
+            role ===
+              ORGANIZATION_ROLES.ADMIN
+        ),
+      [
+        organizationRoles,
+      ]
     );
 
 
@@ -239,12 +578,15 @@ function Projects() {
           </p>
         </div>
 
+
         {canCreate && (
           <Link
             to="/projects/create"
             className="create-project-button"
           >
-            <Plus size={18} />
+            <Plus
+              size={18}
+            />
 
             ایجاد پروژه
           </Link>
@@ -257,12 +599,18 @@ function Projects() {
 
         <div className="projects-search">
 
-          <Search size={17} />
+          <Search
+            size={17}
+          />
 
           <input
             type="text"
-            value={searchValue}
-            onChange={(event) =>
+            value={
+              searchValue
+            }
+            onChange={(
+              event
+            ) =>
               setSearchValue(
                 event.target.value
               )
@@ -277,24 +625,31 @@ function Projects() {
 
           <div className="status-filter">
 
-            <Filter size={16} />
+            <Filter
+              size={16}
+            />
 
             <select
               value={
                 organizationFilter
               }
-              onChange={(event) =>
+              onChange={(
+                event
+              ) =>
                 setOrganizationFilter(
                   event.target.value
                 )
               }
             >
+
               <option value="all">
                 همه سازمان‌ها
               </option>
 
               {organizations.map(
-                (organization) => (
+                (
+                  organization
+                ) => (
                   <option
                     key={
                       organization.id
@@ -309,6 +664,7 @@ function Projects() {
                   </option>
                 )
               )}
+
             </select>
 
           </div>
@@ -316,16 +672,23 @@ function Projects() {
 
           <div className="status-filter">
 
-            <Filter size={16} />
+            <Filter
+              size={16}
+            />
 
             <select
-              value={statusFilter}
-              onChange={(event) =>
+              value={
+                statusFilter
+              }
+              onChange={(
+                event
+              ) =>
                 setStatusFilter(
                   event.target.value
                 )
               }
             >
+
               {Object.entries(
                 STATUS_OPTIONS
               ).map(
@@ -334,16 +697,43 @@ function Projects() {
                   label,
                 ]) => (
                   <option
-                    key={value}
-                    value={value}
+                    key={
+                      value
+                    }
+                    value={
+                      value
+                    }
                   >
                     {label}
                   </option>
                 )
               )}
+
             </select>
 
           </div>
+
+
+          <button
+            type="button"
+            className="organization-refresh-button"
+            onClick={
+              loadPage
+            }
+            disabled={
+              loading
+            }
+            title="بارگذاری مجدد پروژه‌ها"
+          >
+            <RefreshCw
+              size={17}
+              className={
+                loading
+                  ? "organization-spinner"
+                  : ""
+              }
+            />
+          </button>
 
         </div>
 
@@ -360,7 +750,9 @@ function Projects() {
             </strong>
 
             <span>
-              {filteredProjects.length}
+              {
+                filteredProjects.length
+              }
               {" "}
               پروژه
             </span>
@@ -371,13 +763,39 @@ function Projects() {
 
         {loading ? (
           <div className="projects-empty">
-            در حال بارگذاری پروژه‌ها...
+
+            <RefreshCw
+              size={24}
+              className="organization-spinner"
+            />
+
+            در حال دریافت پروژه‌ها...
+
+          </div>
+        ) : error ? (
+          <div className="projects-empty">
+
+            <strong>
+              {error}
+            </strong>
+
+            <button
+              type="button"
+              onClick={
+                loadPage
+              }
+            >
+              تلاش مجدد
+            </button>
+
           </div>
         ) : filteredProjects.length ===
           0 ? (
           <div className="projects-empty">
 
-            <Building2 size={39} />
+            <Building2
+              size={39}
+            />
 
             <strong>
               پروژه‌ای برای نمایش وجود ندارد
@@ -429,45 +847,57 @@ function Projects() {
               <tbody>
 
                 {filteredProjects.map(
-                  (project) => {
+                  (
+                    project
+                  ) => {
 
                     const managers =
-                      getProjectManagers(
-                        project
+                      project.members.filter(
+                        (
+                          member
+                        ) =>
+                          member.role ===
+                          PROJECT_ROLES.MANAGER
                       );
 
-                    const membership =
-                      getProjectMembership(
-                        project,
-                        currentUser?.id
-                      );
 
                     const organizationRole =
-                      getProjectOrganizationRole(
-                        project,
-                        currentUser,
-                        organizations
-                      );
+                      organizationRoles[
+                        String(
+                          project.organizationId
+                        )
+                      ];
+
+
+                    let accessLabel =
+                      "عضو سازمان";
+
+
+                    if (
+                      project.currentProjectRole
+                    ) {
+                      accessLabel =
+                        PROJECT_ROLE_LABELS[
+                          project.currentProjectRole
+                        ] ||
+                        "عضو پروژه";
+                    } else if (
+                      organizationRole ===
+                      ORGANIZATION_ROLES.OWNER
+                    ) {
+                      accessLabel =
+                        "مالک سازمان";
+                    } else if (
+                      organizationRole ===
+                      ORGANIZATION_ROLES.ADMIN
+                    ) {
+                      accessLabel =
+                        "مدیر سازمان";
+                    }
+
 
                     const normalizedRole =
-                      membership
-                        ? normalizeProjectRole(
-                            membership.role
-                          )
-                        : null;
-
-                    const accessLabel =
-                      membership
-                        ? getProjectRoleLabel(
-                            membership.role
-                          )
-                        : organizationRole ===
-                          "OWNER"
-                          ? "مالک سازمان"
-                          : organizationRole ===
-                            "ADMIN"
-                            ? "مدیر سازمان"
-                            : "عضو";
+                      project.currentProjectRole;
 
 
                     return (
@@ -507,10 +937,13 @@ function Projects() {
                           <span
                             className={`project-status status-${project.status}`}
                           >
-                            {STATUS_OPTIONS[
-                              project.status
-                            ] ||
-                              "در حال انجام"}
+                            {
+                              STATUS_OPTIONS[
+                                project.status
+                              ] ||
+                              project.backendStatus ||
+                              "نامشخص"
+                            }
                           </span>
 
                         </td>
@@ -549,10 +982,14 @@ function Projects() {
                           0
                             ? managers
                                 .map(
-                                  (manager) =>
+                                  (
+                                    manager
+                                  ) =>
                                     manager.fullName
                                 )
-                                .join("، ")
+                                .join(
+                                  "، "
+                                )
                             : "تعیین نشده"}
                         </td>
 
@@ -579,8 +1016,9 @@ function Projects() {
 
 
                         <td>
-                          {project.startDate ||
-                            "-"}
+                          {formatPersianDate(
+                            project.startDate
+                          )}
                         </td>
 
                       </tr>
