@@ -27,6 +27,10 @@ import {
 
 import {
   getMyOrganizations,
+  getOrganizationMembers,
+  inviteOrganizationMember,
+  removeOrganizationMember,
+  updateOrganizationMemberRole,
 } from "../../services/organizationService";
 
 import {
@@ -35,13 +39,58 @@ import {
   ORGANIZATION_ROLES,
 } from "../../constants/roles";
 
-import {
-  loadOrganizationMembers,
-  saveOrganizationMembers,
-  searchMockDirectoryUsers,
-} from "../../data/organizationUiMockData";
-
 import "./OrganizationDetails.css";
+
+
+const getRequestErrorMessage = (
+  error,
+  fallback
+) => {
+  const detail =
+    error.response?.data?.detail;
+
+  const translations = {
+    "User not found":
+      "کاربری با این نام کاربری پیدا نشد.",
+
+    "User is already a member of this organization":
+      "این کاربر در حال حاضر عضو سازمان است.",
+
+    "A pending invitation already exists":
+      "قبلاً برای این کاربر دعوت‌نامه ارسال شده و هنوز در انتظار پاسخ است.",
+
+    "You cannot invite yourself":
+      "نمی‌توانید خودتان را به سازمان دعوت کنید.",
+
+    "You do not have permission to invite members":
+      "اجازه دعوت عضو جدید را ندارید.",
+
+    "You do not have permission to remove members":
+      "اجازه حذف اعضای سازمان را ندارید.",
+
+    "Only the organization owner can change member roles":
+      "فقط مالک سازمان می‌تواند نقش اعضا را تغییر دهد.",
+
+    "The organization owner cannot be removed":
+      "مالک سازمان قابل حذف نیست.",
+
+    "You cannot remove yourself from the organization":
+      "نمی‌توانید خودتان را از سازمان حذف کنید.",
+  };
+
+  if (
+    typeof detail === "string" &&
+    translations[detail]
+  ) {
+    return translations[detail];
+  }
+
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  return fallback;
+};
 
 
 function OrganizationDetails() {
@@ -55,13 +104,12 @@ function OrganizationDetails() {
   const location =
     useLocation();
 
-
   const [
     organization,
     setOrganization,
   ] = useState(
     location.state?.organization ||
-    null
+      null
   );
 
   const [
@@ -85,14 +133,24 @@ function OrganizationDetails() {
   ] = useState("");
 
   const [
-    searchValue,
-    setSearchValue,
+    actionError,
+    setActionError,
   ] = useState("");
 
   const [
-    selectedUser,
-    setSelectedUser,
-  ] = useState(null);
+    actionMessage,
+    setActionMessage,
+  ] = useState("");
+
+  const [
+    deleteNotice,
+    setDeleteNotice,
+  ] = useState("");
+
+  const [
+    inviteUsername,
+    setInviteUsername,
+  ] = useState("");
 
   const [
     selectedRole,
@@ -101,87 +159,87 @@ function OrganizationDetails() {
     ORGANIZATION_ROLES.ORG_MEMBER
   );
 
+  const [
+    inviting,
+    setInviting,
+  ] = useState(false);
+
+  const [
+    pendingMemberId,
+    setPendingMemberId,
+  ] = useState(null);
+
 
   useEffect(() => {
-    const loadPage =
-      async () => {
+    const loadPage = async () => {
+      setLoading(true);
+      setError("");
 
-        setLoading(true);
-        setError("");
+      try {
+        const user =
+          await getCurrentUser();
 
+        setCurrentUser(user);
 
-        try {
-          const user =
-            await getCurrentUser();
+        let loadedOrganization =
+          location.state?.organization ||
+          null;
 
-          setCurrentUser(user);
-
-
-          let loadedOrganization =
-            location.state?.organization ||
-            null;
-
-
-          if (
-            !loadedOrganization ||
+        if (
+          !loadedOrganization ||
+          String(
+            loadedOrganization.id
+          ) !==
             String(
-              loadedOrganization.id
-            ) !==
-              String(
-                organizationId
-              )
-          ) {
-            const organizations =
-              await getMyOrganizations();
+              organizationId
+            )
+        ) {
+          const organizations =
+            await getMyOrganizations();
 
-
-            loadedOrganization =
-              organizations.find(
-                (item) =>
-                  String(item.id) ===
-                  String(organizationId)
-              ) || null;
-          }
-
-
-          if (!loadedOrganization) {
-            setError(
-              "سازمان موردنظر پیدا نشد."
-            );
-
-            return;
-          }
-
-
-          setOrganization(
-            loadedOrganization
-          );
-
-
-          const loadedMembers =
-            loadOrganizationMembers(
-              loadedOrganization,
-              user
-            );
-
-
-          setMembers(
-            loadedMembers
-          );
-        } catch (requestError) {
-          console.error(
-            "Load organization details error:",
-            requestError
-          );
-
-          setError(
-            "دریافت اطلاعات سازمان با خطا مواجه شد."
-          );
-        } finally {
-          setLoading(false);
+          loadedOrganization =
+            organizations.find(
+              (item) =>
+                String(item.id) ===
+                String(
+                  organizationId
+                )
+            ) || null;
         }
-      };
 
+        if (!loadedOrganization) {
+          setError(
+            "سازمان موردنظر پیدا نشد."
+          );
+
+          return;
+        }
+
+        setOrganization(
+          loadedOrganization
+        );
+
+        const loadedMembers =
+          await getOrganizationMembers(
+            loadedOrganization.id
+          );
+
+        setMembers(
+          loadedMembers
+        );
+      } catch (requestError) {
+        console.error(
+          "Load organization details error:",
+          requestError
+        );
+
+        setError(
+          "دریافت اطلاعات سازمان با خطا مواجه شد."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
 
     loadPage();
   }, [
@@ -230,175 +288,319 @@ function OrganizationDetails() {
       ORGANIZATION_ROLES.ADMIN;
 
 
-  const searchResults =
-    useMemo(
-      () =>
-        searchMockDirectoryUsers(
-          searchValue,
-          members
-        ),
-      [
-        searchValue,
-        members,
-      ]
-    );
+  const canChangeRoles =
+    currentRole ===
+    ORGANIZATION_ROLES.OWNER;
 
 
-  const updateMembers =
-    (nextMembers) => {
-
-      setMembers(
-        nextMembers
-      );
+  const canDeleteOrganization =
+    currentRole ===
+    ORGANIZATION_ROLES.OWNER;
 
 
-      saveOrganizationMembers(
-        organization.id,
-        nextMembers
-      );
+  const clearMessages = () => {
+    setActionError("");
+    setActionMessage("");
+    setDeleteNotice("");
+  };
+
+
+  const getMemberDisplay = (
+    member
+  ) => {
+    const isCurrentUser =
+      Number(member.user_id) ===
+      Number(currentUser?.id);
+
+    if (isCurrentUser) {
+      return {
+        fullName:
+          currentUser?.full_name ||
+          currentUser?.username ||
+          `کاربر #${member.user_id}`,
+
+        secondary:
+          currentUser?.username
+            ? `@${currentUser.username}`
+            : `شناسه کاربر: ${member.user_id}`,
+      };
+    }
+
+    if (
+      Number(member.user_id) ===
+      Number(
+        organization?.owner_id
+      )
+    ) {
+      return {
+        fullName:
+          `مالک سازمان #${member.user_id}`,
+
+        secondary:
+          `شناسه کاربر: ${member.user_id}`,
+      };
+    }
+
+    return {
+      fullName:
+        `کاربر #${member.user_id}`,
+
+      secondary:
+        `شناسه کاربر: ${member.user_id}`,
     };
+  };
 
 
-  const handleAddMember =
-    () => {
+  const canRemoveMember = (
+    member
+  ) => {
+    if (!canManageMembers) {
+      return false;
+    }
+
+    if (
+      member.role ===
+      ORGANIZATION_ROLES.OWNER
+    ) {
+      return false;
+    }
+
+    if (
+      Number(member.user_id) ===
+      Number(currentUser?.id)
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
+
+  const canChangeMemberRole = (
+    member
+  ) => {
+    if (!canChangeRoles) {
+      return false;
+    }
+
+    if (
+      member.role ===
+      ORGANIZATION_ROLES.OWNER
+    ) {
+      return false;
+    }
+
+    if (
+      Number(member.user_id) ===
+      Number(currentUser?.id)
+    ) {
+      return false;
+    }
+
+    return true;
+  };
+
+
+  const handleInviteMember =
+    async () => {
+      clearMessages();
+
+      const username =
+        inviteUsername.trim();
 
       if (
-        !selectedUser ||
-        !canManageMembers
+        !canManageMembers ||
+        inviting
       ) {
         return;
       }
 
+      if (username.length < 3) {
+        setActionError(
+          "نام کاربری باید حداقل ۳ کاراکتر باشد."
+        );
 
-      const nextMember = {
-        user_id:
-          selectedUser.id,
-
-        full_name:
-          selectedUser.full_name,
-
-        username:
-          selectedUser.username,
-
-        email:
-          selectedUser.email,
-
-        role:
-          selectedRole,
-      };
-
-
-      updateMembers([
-        ...members,
-        nextMember,
-      ]);
-
-
-      setSelectedUser(null);
-
-      setSelectedRole(
-        ORGANIZATION_ROLES.ORG_MEMBER
-      );
-
-      setSearchValue("");
-    };
-
-
-  const canEditMember =
-    (member) => {
-
-      if (!canManageMembers) {
-        return false;
+        return;
       }
 
+      setInviting(true);
 
-      if (
-        member.role ===
-        ORGANIZATION_ROLES.OWNER
-      ) {
-        return false;
-      }
+      try {
+        await inviteOrganizationMember(
+          organization.id,
+          {
+            username,
+            role: selectedRole,
+          }
+        );
 
+        setActionMessage(
+          "دعوت‌نامه با موفقیت ارسال شد. کاربر پس از پذیرش دعوت به اعضای سازمان اضافه می‌شود."
+        );
 
-      if (
-        currentRole ===
-          ORGANIZATION_ROLES.ADMIN &&
-        Number(
-          member.user_id
-        ) ===
-          Number(
-            currentUser?.id
+        setInviteUsername("");
+
+        setSelectedRole(
+          ORGANIZATION_ROLES.ORG_MEMBER
+        );
+      } catch (requestError) {
+        console.error(
+          "Invite organization member error:",
+          requestError
+        );
+
+        setActionError(
+          getRequestErrorMessage(
+            requestError,
+            "ارسال دعوت‌نامه با خطا مواجه شد."
           )
-      ) {
-        return false;
+        );
+      } finally {
+        setInviting(false);
       }
-
-
-      return true;
     };
 
 
   const handleRoleChange =
-    (
+    async (
       userId,
       nextRole
     ) => {
+      clearMessages();
 
       const member =
         members.find(
           (item) =>
-            Number(
-              item.user_id
-            ) ===
+            Number(item.user_id) ===
             Number(userId)
         );
 
-
       if (
         !member ||
-        !canEditMember(member)
+        !canChangeMemberRole(member)
       ) {
         return;
       }
 
-
-      updateMembers(
-        members.map(
-          (item) =>
-            Number(
-              item.user_id
-            ) ===
-            Number(userId)
-              ? {
-                  ...item,
-                  role: nextRole,
-                }
-              : item
-        )
+      setPendingMemberId(
+        userId
       );
+
+      try {
+        const updatedMember =
+          await updateOrganizationMemberRole(
+            organization.id,
+            userId,
+            nextRole
+          );
+
+        setMembers(
+          (currentMembers) =>
+            currentMembers.map(
+              (item) =>
+                Number(
+                  item.user_id
+                ) ===
+                Number(userId)
+                  ? {
+                      ...item,
+                      ...updatedMember,
+                    }
+                  : item
+            )
+        );
+
+        setActionMessage(
+          "نقش عضو با موفقیت تغییر کرد."
+        );
+      } catch (requestError) {
+        console.error(
+          "Update organization member role error:",
+          requestError
+        );
+
+        setActionError(
+          getRequestErrorMessage(
+            requestError,
+            "تغییر نقش عضو با خطا مواجه شد."
+          )
+        );
+      } finally {
+        setPendingMemberId(null);
+      }
     };
 
 
   const handleRemoveMember =
-    (member) => {
+    async (member) => {
+      clearMessages();
 
       if (
-        !canEditMember(member)
+        !canRemoveMember(member)
       ) {
         return;
       }
 
+      const confirmed =
+        window.confirm(
+          `آیا از حذف کاربر #${member.user_id} از سازمان مطمئن هستید؟`
+        );
 
-      updateMembers(
-        members.filter(
-          (item) =>
-            Number(
-              item.user_id
-            ) !==
-            Number(
-              member.user_id
+      if (!confirmed) {
+        return;
+      }
+
+      setPendingMemberId(
+        member.user_id
+      );
+
+      try {
+        await removeOrganizationMember(
+          organization.id,
+          member.user_id
+        );
+
+        setMembers(
+          (currentMembers) =>
+            currentMembers.filter(
+              (item) =>
+                Number(
+                  item.user_id
+                ) !==
+                Number(
+                  member.user_id
+                )
             )
-        )
+        );
+
+        setActionMessage(
+          "عضو با موفقیت از سازمان حذف شد."
+        );
+      } catch (requestError) {
+        console.error(
+          "Remove organization member error:",
+          requestError
+        );
+
+        setActionError(
+          getRequestErrorMessage(
+            requestError,
+            "حذف عضو با خطا مواجه شد."
+          )
+        );
+      } finally {
+        setPendingMemberId(null);
+      }
+    };
+
+
+  const handleDeleteOrganizationUi =
+    () => {
+      setActionError("");
+      setActionMessage("");
+
+      setDeleteNotice(
+        "بخش حذف سازمان در رابط کاربری اضافه شده است. چون بک‌اند فعلی هنوز endpoint حذف سازمان ندارد، فعلاً هیچ درخواست حذفی ارسال نمی‌شود."
       );
     };
 
@@ -406,11 +608,9 @@ function OrganizationDetails() {
   if (loading) {
     return (
       <section className="organization-details-page">
-
         <div className="organization-details-state">
           در حال دریافت اطلاعات سازمان...
         </div>
-
       </section>
     );
   }
@@ -422,9 +622,7 @@ function OrganizationDetails() {
   ) {
     return (
       <section className="organization-details-page">
-
         <div className="organization-details-state">
-
           <p>
             {error ||
               "سازمان پیدا نشد."}
@@ -440,9 +638,7 @@ function OrganizationDetails() {
           >
             بازگشت به سازمان‌ها
           </button>
-
         </div>
-
       </section>
     );
   }
@@ -470,17 +666,36 @@ function OrganizationDetails() {
         </button>
 
 
-        <span
-          className="organization-current-role"
-        >
-          <ShieldCheck
-            size={16}
-          />
+        <div className="organization-topbar-actions">
 
-          {ORGANIZATION_ROLE_LABELS[
-            currentRole
-          ]}
-        </span>
+          {canDeleteOrganization && (
+            <button
+              type="button"
+              className="organization-delete-button"
+              onClick={
+                handleDeleteOrganizationUi
+              }
+            >
+              <Trash2 size={16} />
+
+              حذف سازمان
+            </button>
+          )}
+
+          <span
+            className="organization-current-role"
+          >
+            <ShieldCheck
+              size={16}
+            />
+
+            {ORGANIZATION_ROLE_LABELS[
+              currentRole
+            ] ||
+              "عضو سازمان"}
+          </span>
+
+        </div>
 
       </div>
 
@@ -488,11 +703,9 @@ function OrganizationDetails() {
       <div className="organization-details-hero">
 
         <div className="organization-hero-icon">
-
           <Building2
             size={31}
           />
-
         </div>
 
 
@@ -538,6 +751,27 @@ function OrganizationDetails() {
       </div>
 
 
+      {actionMessage && (
+        <div className="organization-action-message success">
+          {actionMessage}
+        </div>
+      )}
+
+
+      {actionError && (
+        <div className="organization-action-message error">
+          {actionError}
+        </div>
+      )}
+
+
+      {deleteNotice && (
+        <div className="organization-action-message warning">
+          {deleteNotice}
+        </div>
+      )}
+
+
       <div className="organization-members-title">
 
         <div>
@@ -546,7 +780,7 @@ function OrganizationDetails() {
           </h3>
 
           <p>
-            اعضای سازمان و سطح دسترسی سازمانی آن‌ها
+            اعضای واقعی سازمان و سطح دسترسی سازمانی آن‌ها
           </p>
         </div>
 
@@ -565,7 +799,7 @@ function OrganizationDetails() {
               </h3>
 
               <p>
-                نقش سازمانی اعضا مستقل از نقش آن‌ها در پروژه‌ها است.
+                این لیست مستقیماً از بک‌اند دریافت می‌شود.
               </p>
             </div>
 
@@ -580,134 +814,157 @@ function OrganizationDetails() {
 
           <div className="organization-member-list">
 
-            {members.map(
-              (member) => {
+            {members.length === 0 ? (
+              <div className="organization-no-result">
+                عضوی برای این سازمان ثبت نشده است.
+              </div>
+            ) : (
+              members.map(
+                (member) => {
+                  const isOwner =
+                    member.role ===
+                    ORGANIZATION_ROLES.OWNER;
 
-                const isOwner =
-                  member.role ===
-                  ORGANIZATION_ROLES.OWNER;
+                  const removable =
+                    canRemoveMember(
+                      member
+                    );
 
+                  const roleEditable =
+                    canChangeMemberRole(
+                      member
+                    );
 
-                const editable =
-                  canEditMember(
-                    member
-                  );
+                  const memberDisplay =
+                    getMemberDisplay(
+                      member
+                    );
 
-
-                return (
-                  <article
-                    key={
+                  const isPending =
+                    Number(
+                      pendingMemberId
+                    ) ===
+                    Number(
                       member.user_id
-                    }
-                    className="organization-member-item"
-                  >
+                    );
 
-                    <div className="organization-member-avatar">
-                      {member
-                        .full_name
-                        ?.charAt(0) ||
-                        "U"}
-                    </div>
+                  return (
+                    <article
+                      key={
+                        member.user_id
+                      }
+                      className="organization-member-item"
+                    >
 
-
-                    <div className="organization-member-info">
-
-                      <strong>
-                        {member.full_name}
-                      </strong>
-
-                      <span>
-                        @
-                        {member.username}
-                      </span>
-
-                    </div>
+                      <div className="organization-member-avatar">
+                        {memberDisplay
+                          .fullName
+                          ?.charAt(0) ||
+                          "U"}
+                      </div>
 
 
-                    <div className="organization-member-role">
+                      <div className="organization-member-info">
 
-                      {isOwner ? (
-                        <span className="organization-owner-badge">
+                        <strong>
+                          {memberDisplay.fullName}
+                        </strong>
 
-                          <Crown
-                            size={14}
-                          />
-
-                          مالک سازمان
-
+                        <span>
+                          {memberDisplay.secondary}
                         </span>
-                      ) : editable ? (
-                        <select
-                          value={
-                            member.role
-                          }
-                          onChange={(
-                            event
-                          ) =>
-                            handleRoleChange(
-                              member.user_id,
-                              event
-                                .target
-                                .value
-                            )
-                          }
-                        >
 
-                          {ORGANIZATION_MEMBER_ROLE_OPTIONS.map(
-                            (
-                              option
-                            ) => (
-                              <option
-                                key={
-                                  option.value
-                                }
-                                value={
-                                  option.value
-                                }
-                              >
-                                {
-                                  option.label
-                                }
-                              </option>
-                            )
-                          )}
+                      </div>
 
-                        </select>
-                      ) : (
-                        <span className="organization-role-badge">
 
-                          {
-                            ORGANIZATION_ROLE_LABELS[
+                      <div className="organization-member-role">
+
+                        {isOwner ? (
+                          <span className="organization-owner-badge">
+
+                            <Crown
+                              size={14}
+                            />
+
+                            مالک سازمان
+
+                          </span>
+                        ) : roleEditable ? (
+                          <select
+                            value={
                               member.role
-                            ]
-                          }
+                            }
+                            disabled={
+                              isPending
+                            }
+                            onChange={(
+                              event
+                            ) =>
+                              handleRoleChange(
+                                member.user_id,
+                                event.target.value
+                              )
+                            }
+                          >
 
-                        </span>
+                            {ORGANIZATION_MEMBER_ROLE_OPTIONS.map(
+                              (
+                                option
+                              ) => (
+                                <option
+                                  key={
+                                    option.value
+                                  }
+                                  value={
+                                    option.value
+                                  }
+                                >
+                                  {option.label}
+                                </option>
+                              )
+                            )}
+
+                          </select>
+                        ) : (
+                          <span className="organization-role-badge">
+
+                            {
+                              ORGANIZATION_ROLE_LABELS[
+                                member.role
+                              ] ||
+                              member.role
+                            }
+
+                          </span>
+                        )}
+
+                      </div>
+
+
+                      {removable && (
+                        <button
+                          type="button"
+                          className="organization-remove-member"
+                          disabled={
+                            isPending
+                          }
+                          onClick={() =>
+                            handleRemoveMember(
+                              member
+                            )
+                          }
+                          aria-label="حذف عضو"
+                        >
+                          <Trash2
+                            size={17}
+                          />
+                        </button>
                       )}
 
-                    </div>
-
-
-                    {editable && (
-                      <button
-                        type="button"
-                        className="organization-remove-member"
-                        onClick={() =>
-                          handleRemoveMember(
-                            member
-                          )
-                        }
-                        aria-label="حذف عضو"
-                      >
-                        <Trash2
-                          size={17}
-                        />
-                      </button>
-                    )}
-
-                  </article>
-                );
-              }
+                    </article>
+                  );
+                }
+              )
             )}
 
           </div>
@@ -721,11 +978,11 @@ function OrganizationDetails() {
 
             <div>
               <h3>
-                افزودن عضو
+                دعوت عضو
               </h3>
 
               <p>
-                جستجو با نام کاربری
+                دعوت کاربر ثبت‌شده با نام کاربری دقیق
               </p>
             </div>
 
@@ -738,9 +995,7 @@ function OrganizationDetails() {
 
           {!canManageMembers ? (
             <div className="organization-permission-message">
-
-              فقط مالک یا مدیر سازمان می‌تواند عضو جدید اضافه کند.
-
+              فقط مالک یا مدیر سازمان می‌تواند عضو جدید دعوت کند.
             </div>
           ) : (
             <>
@@ -753,168 +1008,93 @@ function OrganizationDetails() {
 
                 <input
                   type="text"
+                  dir="ltr"
                   value={
-                    searchValue
+                    inviteUsername
                   }
                   onChange={(
                     event
                   ) => {
-                    setSearchValue(
-                      event
-                        .target
-                        .value
+                    setInviteUsername(
+                      event.target.value
                     );
 
-                    setSelectedUser(
-                      null
-                    );
+                    clearMessages();
                   }}
-                  placeholder="مثلاً sara.ahmadi"
+                  placeholder="username"
                 />
 
               </div>
 
 
               <div className="organization-search-caption">
-                کاربران آزمایشی — تا زمان آماده شدن API جستجوی کاربران
+                بک‌اند فعلی API جستجوی بخشی کاربران ندارد؛ نام کاربری ثبت‌شده را دقیق وارد کنید.
               </div>
 
 
-              <div className="organization-search-results">
+              <div className="organization-invite-controls">
 
-                {searchResults.length ===
-                0 ? (
-                  <div className="organization-no-result">
+                <label>
+                  نقش سازمانی
 
-                    کاربر دیگری برای افزودن پیدا نشد.
-
-                  </div>
-                ) : (
-                  searchResults.map(
-                    (user) => (
-                      <button
-                        type="button"
-                        key={
-                          user.id
-                        }
-                        className={
-                          selectedUser
-                            ?.id ===
-                          user.id
-                            ? "organization-search-user selected"
-                            : "organization-search-user"
-                        }
-                        onClick={() =>
-                          setSelectedUser(
-                            user
-                          )
-                        }
-                      >
-
-                        <div>
-
-                          <strong>
-                            {
-                              user.full_name
-                            }
-                          </strong>
-
-                          <span>
-                            @
-                            {
-                              user.username
-                            }
-                          </span>
-
-                        </div>
-
-                      </button>
-                    )
-                  )
-                )}
-
-              </div>
-
-
-              {selectedUser && (
-                <div className="organization-selected-user">
-
-                  <div>
-                    <strong>
-                      {
-                        selectedUser.full_name
-                      }
-                    </strong>
-
-                    <span>
-                      @
-                      {
-                        selectedUser.username
-                      }
-                    </span>
-                  </div>
-
-
-                  <label>
-
-                    نقش سازمانی
-
-                    <select
-                      value={
-                        selectedRole
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        setSelectedRole(
-                          event
-                            .target
-                            .value
-                        )
-                      }
-                    >
-
-                      {ORGANIZATION_MEMBER_ROLE_OPTIONS.map(
-                        (
-                          option
-                        ) => (
-                          <option
-                            key={
-                              option.value
-                            }
-                            value={
-                              option.value
-                            }
-                          >
-                            {
-                              option.label
-                            }
-                          </option>
-                        )
-                      )}
-
-                    </select>
-
-                  </label>
-
-
-                  <button
-                    type="button"
-                    onClick={
-                      handleAddMember
+                  <select
+                    value={
+                      selectedRole
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      setSelectedRole(
+                        event.target.value
+                      )
                     }
                   >
 
-                    <UserPlus
-                      size={17}
-                    />
+                    {ORGANIZATION_MEMBER_ROLE_OPTIONS.map(
+                      (
+                        option
+                      ) => (
+                        <option
+                          key={
+                            option.value
+                          }
+                          value={
+                            option.value
+                          }
+                        >
+                          {option.label}
+                        </option>
+                      )
+                    )}
 
-                    افزودن به سازمان
+                  </select>
+                </label>
 
-                  </button>
 
-                </div>
-              )}
+                <button
+                  type="button"
+                  disabled={
+                    inviting ||
+                    inviteUsername
+                      .trim()
+                      .length < 3
+                  }
+                  onClick={
+                    handleInviteMember
+                  }
+                >
+
+                  <UserPlus
+                    size={17}
+                  />
+
+                  {inviting
+                    ? "در حال ارسال..."
+                    : "ارسال دعوت‌نامه"}
+
+                </button>
+
+              </div>
 
             </>
           )}

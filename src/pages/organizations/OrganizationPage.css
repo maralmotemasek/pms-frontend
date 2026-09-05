@@ -10,6 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   margin-bottom: 20px;
 }
 
@@ -27,6 +28,280 @@
   font-weight: 500;
 }
 
+.organization-invitation-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 999px;
+  background-color: #fff1f2;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.organization-invitations-card {
+  margin-bottom: 22px;
+  padding: 20px 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #fcfdff 100%
+  );
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+}
+
+.organization-invitations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.organization-invitations-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.organization-invitations-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  background-color: #fff1f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.organization-invitations-title h3 {
+  margin: 0 0 5px;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.organization-invitations-title p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.organization-invitations-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.organization-invitation-count {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background-color: #fff1f2;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.organization-invitation-state {
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.organization-invitation-empty {
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #94a3b8;
+}
+
+.organization-invitation-empty > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.organization-invitation-empty strong {
+  color: #475569;
+  font-size: 13px;
+}
+
+.organization-invitation-empty span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.organization-invitation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 15px;
+}
+
+.organization-invitation-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background-color: #f8fbff;
+  box-shadow: 0 8px 22px rgba(59, 130, 246, 0.05);
+}
+
+.organization-invitation-main {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.organization-invitation-building {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbeafe;
+}
+
+.organization-invitation-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.organization-invitation-info > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.organization-invitation-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 10px;
+}
+
+.organization-invitation-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 11px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 5px 8px;
+  border-radius: 999px;
+}
+
+.organization-invitation-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.organization-invitation-summary p {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.organization-invitation-summary p span {
+  color: #0f172a;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.organization-invitation-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.organization-invitation-actions button {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.organization-invitation-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.organization-invitation-accept {
+  border: 1px solid #86efac;
+  background-color: #f0fdf4;
+  color: #15803d;
+}
+
+.organization-invitation-accept:hover:not(:disabled) {
+  background-color: #dcfce7;
+}
+
+.organization-invitation-reject {
+  border: 1px solid #fecaca;
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.organization-invitation-reject:hover:not(:disabled) {
+  background-color: #fee2e2;
+}
+
+.organization-invitation-message {
+  margin-top: 13px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.organization-invitation-message.success {
+  border: 1px solid #bbf7d0;
+  background-color: #f0fdf4;
+  color: #166534;
+}
+
+.organization-invitation-message.error {
+  border: 1px solid #fecaca;
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
 .organization-layout {
   display: grid;
   grid-template-columns:
@@ -42,6 +317,7 @@
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 22px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
 }
 
 .organization-card-title {
@@ -166,10 +442,10 @@
 }
 
 .organization-refresh-button {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border: 1px solid #dbe4f0;
-  border-radius: 8px;
+  border-radius: 10px;
   background-color: #ffffff;
   color: #2563eb;
   cursor: pointer;
@@ -182,6 +458,11 @@
 .organization-refresh-button:hover {
   background-color: #eff6ff;
   border-color: #bfdbfe;
+}
+
+.organization-refresh-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .organization-state,
@@ -300,6 +581,36 @@
 @media (max-width: 900px) {
   .organization-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .organization-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .organization-invitations-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .organization-invitations-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .organization-invitation-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .organization-invitation-actions {
+    width: 100%;
+  }
+
+  .organization-invitation-actions button {
+    flex: 1;
   }
 }
 
