@@ -60,16 +60,32 @@ export const clearAuthTokens =
 export const registerUser =
   async (data) => {
 
-    const response =
+    await api.post(
+      "/auth/register",
+      data
+    );
+
+
+    const loginResponse =
       await api.post(
-        "/auth/register",
-        data
+        "/auth/login",
+        {
+          email:
+            data.email,
+
+          password:
+            data.password,
+        }
       );
 
 
-    return response.data;
-  };
+    saveAuthTokens(
+      loginResponse.data
+    );
 
+
+    return loginResponse.data;
+  };
 
 /* =========================
    LOGIN

@@ -1,4 +1,5 @@
 ﻿import {
+  useEffect,
   useState,
 } from "react";
 
@@ -8,21 +9,25 @@ import {
 } from "react-router-dom";
 
 import {
-  LayoutDashboard,
-  Building2,
-  FolderKanban,
-  ClipboardList,
   BarChart3,
+  Bell,
+  Box,
+  Building2,
+  ClipboardList,
+  FolderKanban,
+  LayoutDashboard,
+  LogOut,
   MessageSquare,
   Sparkles,
-  LogOut,
-  Box,
-  Gauge,
 } from "lucide-react";
 
 import {
   logoutUser,
 } from "../../../services/authService";
+
+import {
+  getMyOrganizationInvitations,
+} from "../../../services/organizationService";
 
 import "./Sidebar.css";
 
@@ -36,10 +41,65 @@ function Sidebar() {
     setIsLoggingOut,
   ] = useState(false);
 
+  const [
+    pendingOrganizationInvitations,
+    setPendingOrganizationInvitations,
+  ] = useState(0);
+
+
+  const loadPendingOrganizationInvitations =
+    async () => {
+      try {
+        const invitations =
+          await getMyOrganizationInvitations();
+
+        const pendingCount =
+          Array.isArray(invitations)
+            ? invitations.filter(
+                (invitation) => {
+                  if (!invitation.status) {
+                    return true;
+                  }
+
+                  return (
+                    String(
+                      invitation.status
+                    ).toUpperCase() ===
+                    "PENDING"
+                  );
+                }
+              ).length
+            : 0;
+
+        setPendingOrganizationInvitations(
+          pendingCount
+        );
+      } catch (error) {
+        console.error(
+          "Load organization invitations count error:",
+          error
+        );
+      }
+    };
+
+
+  useEffect(() => {
+    loadPendingOrganizationInvitations();
+
+    const timer =
+      window.setInterval(
+        loadPendingOrganizationInvitations,
+        30000
+      );
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
+
 
   const handleLogout =
     async () => {
-
       if (isLoggingOut) {
         return;
       }
@@ -103,7 +163,7 @@ function Sidebar() {
             size={21}
           />
 
-          <span>
+          <span className="sidebar-label">
             داشبورد
           </span>
         </NavLink>
@@ -118,8 +178,25 @@ function Sidebar() {
             size={21}
           />
 
-          <span>
-            سازمان‌ها
+          <span
+            className={
+              pendingOrganizationInvitations > 0
+                ? "sidebar-label sidebar-organization-label has-invite"
+                : "sidebar-label sidebar-organization-label"
+            }
+          >
+            <span className="sidebar-organization-text">
+              سازمان‌ها
+            </span>
+
+            {pendingOrganizationInvitations > 0 && (
+              <Bell
+                className="sidebar-invite-bell"
+                size={16}
+                strokeWidth={2.5}
+                aria-label="دعوت‌نامه جدید"
+              />
+            )}
           </span>
         </NavLink>
 
@@ -133,7 +210,7 @@ function Sidebar() {
             size={21}
           />
 
-          <span>
+          <span className="sidebar-label">
             پروژه‌ها
           </span>
         </NavLink>
@@ -143,12 +220,12 @@ function Sidebar() {
           to="/resources"
           className={getLinkClass}
         >
-          <Gauge
+          <BarChart3
             className="sidebar-icon"
             size={21}
           />
 
-          <span>
+          <span className="sidebar-label">
             منابع
           </span>
         </NavLink>
@@ -163,7 +240,7 @@ function Sidebar() {
             size={21}
           />
 
-          <span>
+          <span className="sidebar-label">
             وظایف
           </span>
         </NavLink>
@@ -178,7 +255,7 @@ function Sidebar() {
             size={21}
           />
 
-          <span>
+          <span className="sidebar-label">
             گزارش‌ها
           </span>
         </NavLink>
@@ -193,7 +270,7 @@ function Sidebar() {
             size={21}
           />
 
-          <span>
+          <span className="sidebar-label">
             چت تیمی
           </span>
         </NavLink>
@@ -208,7 +285,7 @@ function Sidebar() {
             size={21}
           />
 
-          <span>
+          <span className="sidebar-label">
             دستیار هوشمند
           </span>
         </NavLink>
@@ -225,7 +302,7 @@ function Sidebar() {
             size={21}
           />
 
-          <span>
+          <span className="sidebar-label">
             {isLoggingOut
               ? "در حال خروج..."
               : "خروج"}
@@ -240,4 +317,3 @@ function Sidebar() {
 
 
 export default Sidebar;
-

@@ -1,6 +1,5 @@
-import {
+﻿import {
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
@@ -24,84 +23,90 @@ import {
 } from "recharts";
 
 import {
-  getCurrentUser,
-} from "../../services/authService";
-
-import {
-  getMyOrganizations,
-} from "../../services/organizationService";
-
-import {
-  getWorkspaceProjects,
-} from "../../data/projectWorkspaceStore";
-
-import {
-  canViewWorkspaceProject,
-} from "../../utils/projectAccess";
+  exportGeneralReportExcel,
+  getReports,
+} from "../../services/reportService";
 
 import "./Reports.css";
 
+const PROJECT_STATUS_LABELS = {
+  TODO: "در انتظار",
+  PLANNED: "برنامه‌ریزی‌شده",
+  IN_PROGRESS: "در حال انجام",
+  "in-progress": "در حال انجام",
+  IN_REVIEW: "در حال بررسی",
+  REVIEW: "در حال بررسی",
+  COMPLETED: "تکمیل‌شده",
+  DONE: "تکمیل‌شده",
+  CANCELLED: "لغوشده",
+  DELAYED: "با تأخیر",
+  delayed: "با تأخیر",
+};
 
-const COMPLETED_STATUSES = new Set([
-  "done",
-  "completed",
-  "انجام شده",
-  "تکمیل شده",
-]);
+const getProjectStatusLabel = (status) =>
+  PROJECT_STATUS_LABELS[status] ||
+  status ||
+  "-";
 
+const formatDate = (date) => {
+  if (!date) {
+    return "-";
+  }
+
+  try {
+    return new Intl.DateTimeFormat(
+      "fa-IR"
+    ).format(new Date(date));
+  } catch {
+    return date;
+  }
+};
 
 function Reports() {
-  const [currentUser, setCurrentUser] =
+  const [report, setReport] =
     useState(null);
-
-  const [organizations, setOrganizations] =
-    useState([]);
-
-  const [projects, setProjects] =
-    useState([]);
 
   const [loading, setLoading] =
     useState(true);
 
+  const [exporting, setExporting] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
     const loadReports = async () => {
       setLoading(true);
+      setError("");
 
       try {
-        const [
-          user,
-          organizationList,
-        ] = await Promise.all([
-          getCurrentUser(),
-          getMyOrganizations(),
-        ]);
+        const data =
+          await getReports();
 
-        const workspaceProjects =
-          getWorkspaceProjects();
-
-        setCurrentUser(user);
-
-        setOrganizations(
-          Array.isArray(organizationList)
-            ? organizationList
-            : []
-        );
-
-        setProjects(
-          Array.isArray(workspaceProjects)
-            ? workspaceProjects
-            : []
-        );
-      } catch (error) {
+        setReport(data);
+      } catch (requestError) {
         console.error(
           "Reports loading error:",
-          error
+          requestError
         );
 
-        setProjects(
-          getWorkspaceProjects()
-        );
+        const status =
+          requestError?.response?.status;
+
+        if (status === 403) {
+          setError(
+            "دسترسی به گزارش کلی فقط برای مالک یا مدیر سازمان مجاز است."
+          );
+        } else if (status === 401) {
+          setError(
+            "برای مشاهده گزارش‌ها باید وارد حساب کاربری شوید."
+          );
+        } else {
+          setError(
+            "دریافت اطلاعات گزارش‌ها با خطا مواجه شد."
+          );
+        }
       } finally {
         setLoading(false);
       }
@@ -110,169 +115,106 @@ function Reports() {
     loadReports();
   }, []);
 
+  const summary =
+    report?.summary || {
+      total_projects: 0,
+      total_tasks: 0,
+      completed_tasks: 0,
+      average_project_progress: 0,
+    };
 
-  const visibleProjects = useMemo(() => {
-    if (!currentUser) {
-      return projects;
-    }
+  const performance =
+    report?.performance || {
+      task_completion_rate: 0,
+      average_project_progress: 0,
+    };
 
-    return projects.filter(
-      (project) =>
-        canViewWorkspaceProject(
-          currentUser,
-          project,
-          organizations
-        )
-    );
-  }, [
-    currentUser,
-    organizations,
-    projects,
-  ]);
+  const projects =
+    Array.isArray(report?.projects)
+      ? report.projects
+      : [];
 
+  const projectChartData =
+    projects.map((project) => ({
+      name:
+        project.project_name ||
+        `پروژه ${project.project_id}`,
 
-  const allTasks = useMemo(
-    () =>
-      visibleProjects.flatMap(
-        (project) =>
-          Array.isArray(project.tasks)
-            ? project.tasks
-            : []
+      progress: Number(
+        project.progress || 0
       ),
-    [visibleProjects]
-  );
+    }));
 
+  const handleExportExcel =
+    async () => {
+      setExporting(true);
+      setError("");
 
-  const completedTasks = useMemo(
-    () =>
-      allTasks.filter(
-        (task) =>
-          COMPLETED_STATUSES.has(
-            String(
-              task.status || ""
-            ).toLowerCase()
-          )
-      ),
-    [allTasks]
-  );
+      try {
+        const response =
+          await exportGeneralReportExcel();
 
+        const blob =
+          new Blob(
+            [response.data],
+            {
+              type:
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            }
+          );
 
-  const averageProgress = useMemo(() => {
-    if (visibleProjects.length === 0) {
-      return 0;
-    }
+        const url =
+          URL.createObjectURL(blob);
 
-    const total =
-      visibleProjects.reduce(
-        (sum, project) =>
-          sum +
-          Number(
-            project.progress || 0
-          ),
-        0
-      );
+        const anchor =
+          document.createElement("a");
 
-    return Math.round(
-      total /
-        visibleProjects.length
-    );
-  }, [visibleProjects]);
+        anchor.href = url;
 
+        anchor.download =
+          "PMS_General_Project_Report.xlsx";
 
-  const projectChartData = useMemo(
-    () =>
-      visibleProjects.map(
-        (project) => ({
-          name:
-            project.title ||
-            `پروژه ${project.id}`,
-          progress:
-            Number(
-              project.progress || 0
-            ),
-        })
-      ),
-    [visibleProjects]
-  );
+        document.body.appendChild(
+          anchor
+        );
 
+        anchor.click();
+        anchor.remove();
 
-  const exportCsv = () => {
-    const header = [
-      "نام پروژه",
-      "سازمان",
-      "وضعیت",
-      "پیشرفت",
-      "تعداد وظایف",
-      "بودجه",
-    ];
+        URL.revokeObjectURL(url);
+      } catch (requestError) {
+        console.error(
+          "Report export error:",
+          requestError
+        );
 
-    const rows =
-      visibleProjects.map(
-        (project) => [
-          project.title || "",
-          project.organizationName || "",
-          project.statusLabel ||
-            project.status ||
-            "",
-          `${Number(
-            project.progress || 0
-          )}%`,
-          Array.isArray(project.tasks)
-            ? project.tasks.length
-            : 0,
-          project.budget || "0",
-        ]
-      );
+        const status =
+          requestError?.response?.status;
 
-    const csv =
-      "\uFEFF" +
-      [header, ...rows]
-        .map((row) =>
-          row
-            .map(
-              (value) =>
-                `"${String(value).replace(
-                  /"/g,
-                  '""'
-                )}"`
-            )
-            .join(",")
-        )
-        .join("\n");
-
-    const blob =
-      new Blob(
-        [csv],
-        {
-          type:
-            "text/csv;charset=utf-8;",
+        if (status === 403) {
+          setError(
+            "شما مجوز دریافت خروجی Excel گزارش کلی را ندارید."
+          );
+        } else if (status === 401) {
+          setError(
+            "برای دریافت گزارش باید وارد حساب کاربری شوید."
+          );
+        } else {
+          setError(
+            "دریافت فایل Excel با خطا مواجه شد."
+          );
         }
-      );
-
-    const url =
-      URL.createObjectURL(blob);
-
-    const anchor =
-      document.createElement("a");
-
-    anchor.href = url;
-    anchor.download =
-      "pms-report.csv";
-
-    document.body.appendChild(
-      anchor
-    );
-
-    anchor.click();
-    anchor.remove();
-
-    URL.revokeObjectURL(url);
-  };
-
+      } finally {
+        setExporting(false);
+      }
+    };
 
   if (loading) {
     return (
-      <section className="reports-page">
+      <section
+        className="reports-page"
+        dir="rtl"
+      >
         <div className="reports-loading">
           در حال آماده‌سازی گزارش...
         </div>
@@ -280,6 +222,29 @@ function Reports() {
     );
   }
 
+  if (error && !report) {
+    return (
+      <section
+        className="reports-page"
+        dir="rtl"
+      >
+        <div className="reports-heading">
+          <div>
+            <h1>گزارش‌ها</h1>
+
+            <p>
+              نمای تحلیلی از وضعیت
+              پروژه‌ها و وظایف
+            </p>
+          </div>
+        </div>
+
+        <div className="reports-panel reports-empty">
+          {error}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -291,43 +256,57 @@ function Reports() {
           <h1>گزارش‌ها</h1>
 
           <p>
-            نمای تحلیلی از وضعیت
-            پروژه‌ها و وظایف
+            نمای تحلیلی از وضعیت پروژه‌ها
+            و وظایف
           </p>
         </div>
 
         <button
           type="button"
           className="reports-export-button"
-          onClick={exportCsv}
+          onClick={handleExportExcel}
+          disabled={exporting}
         >
           <Download size={18} />
-          خروجی CSV
+
+          {exporting
+            ? "در حال دریافت..."
+            : "خروجی Excel"}
         </button>
       </div>
 
+      {error ? (
+        <div className="reports-panel reports-empty">
+          {error}
+        </div>
+      ) : null}
 
       <div className="reports-kpis">
         <article className="reports-kpi-card">
           <div className="reports-kpi-icon">
-            <FolderKanban size={22} />
+            <FolderKanban
+              size={22}
+            />
           </div>
 
           <div>
             <span>
-              پروژه‌های قابل مشاهده
+              کل پروژه‌ها
             </span>
 
             <strong>
-              {visibleProjects.length}
+              {
+                summary.total_projects
+              }
             </strong>
           </div>
         </article>
 
-
         <article className="reports-kpi-card">
           <div className="reports-kpi-icon">
-            <ListChecks size={22} />
+            <ListChecks
+              size={22}
+            />
           </div>
 
           <div>
@@ -336,15 +315,16 @@ function Reports() {
             </span>
 
             <strong>
-              {allTasks.length}
+              {summary.total_tasks}
             </strong>
           </div>
         </article>
 
-
         <article className="reports-kpi-card">
           <div className="reports-kpi-icon">
-            <CheckCircle2 size={22} />
+            <CheckCircle2
+              size={22}
+            />
           </div>
 
           <div>
@@ -353,15 +333,18 @@ function Reports() {
             </span>
 
             <strong>
-              {completedTasks.length}
+              {
+                summary.completed_tasks
+              }
             </strong>
           </div>
         </article>
 
-
         <article className="reports-kpi-card">
           <div className="reports-kpi-icon">
-            <TrendingUp size={22} />
+            <TrendingUp
+              size={22}
+            />
           </div>
 
           <div>
@@ -370,17 +353,24 @@ function Reports() {
             </span>
 
             <strong>
-              {averageProgress}%
+              {Math.round(
+                Number(
+                  summary.average_project_progress ||
+                    0
+                )
+              )}
+              %
             </strong>
           </div>
         </article>
       </div>
 
-
       <div className="reports-grid">
         <article className="reports-panel reports-chart-panel">
           <div className="reports-panel-title">
-            <BarChart3 size={20} />
+            <BarChart3
+              size={20}
+            />
 
             <div>
               <h2>
@@ -397,8 +387,8 @@ function Reports() {
           {projectChartData.length ===
           0 ? (
             <div className="reports-empty">
-              هنوز داده‌ای برای
-              گزارش وجود ندارد.
+              هنوز داده‌ای برای گزارش
+              وجود ندارد.
             </div>
           ) : (
             <div className="reports-chart">
@@ -454,7 +444,6 @@ function Reports() {
           )}
         </article>
 
-
         <article className="reports-panel reports-summary-panel">
           <h2>
             خلاصه عملکرد
@@ -466,13 +455,12 @@ function Reports() {
             </span>
 
             <strong>
-              {allTasks.length
-                ? Math.round(
-                    (completedTasks.length /
-                      allTasks.length) *
-                      100
-                  )
-                : 0}
+              {Math.round(
+                Number(
+                  performance.task_completion_rate ||
+                    0
+                )
+              )}
               %
             </strong>
           </div>
@@ -481,26 +469,34 @@ function Reports() {
             <div
               className="reports-progress-fill"
               style={{
-                width: `${
-                  allTasks.length
-                    ? Math.round(
-                        (completedTasks.length /
-                          allTasks.length) *
-                          100
-                      )
-                    : 0
-                }%`,
+                width: `${Math.min(
+                  100,
+                  Math.max(
+                    0,
+                    Number(
+                      performance.task_completion_rate ||
+                        0
+                    )
+                  )
+                )}%`,
               }}
             />
           </div>
 
           <div className="reports-summary-row">
             <span>
-              میانگین پیشرفت پروژه‌ها
+              میانگین پیشرفت
+              پروژه‌ها
             </span>
 
             <strong>
-              {averageProgress}%
+              {Math.round(
+                Number(
+                  performance.average_project_progress ||
+                    0
+                )
+              )}
+              %
             </strong>
           </div>
 
@@ -508,24 +504,35 @@ function Reports() {
             <div
               className="reports-progress-fill"
               style={{
-                width:
-                  `${averageProgress}%`,
+                width: `${Math.min(
+                  100,
+                  Math.max(
+                    0,
+                    Number(
+                      performance.average_project_progress ||
+                        0
+                    )
+                  )
+                )}%`,
               }}
             />
           </div>
 
           <div className="reports-backend-note">
-            خروجی PDF و Excel پس از
-            آماده‌شدن API گزارش‌گیری
-            Backend متصل می‌شود.
+            اطلاعات این صفحه مستقیماً
+            از API گزارش‌گیری Backend
+            دریافت می‌شود و خروجی Excel
+            نیز توسط Backend تولید
+            می‌شود.
           </div>
         </article>
       </div>
 
-
       <article className="reports-panel">
         <div className="reports-panel-title">
-          <FolderKanban size={20} />
+          <FolderKanban
+            size={20}
+          />
 
           <div>
             <h2>
@@ -533,16 +540,16 @@ function Reports() {
             </h2>
 
             <p>
-              وضعیت کلی پروژه‌های
-              قابل مشاهده برای شما
+              خلاصه وضعیت پروژه‌های
+              قابل گزارش
             </p>
           </div>
         </div>
 
-        {visibleProjects.length === 0 ? (
+        {projects.length === 0 ? (
           <div className="reports-empty">
-            پروژه‌ای برای نمایش وجود
-            ندارد.
+            پروژه‌ای برای نمایش
+            وجود ندارد.
           </div>
         ) : (
           <div className="reports-table-wrapper">
@@ -550,42 +557,47 @@ function Reports() {
               <thead>
                 <tr>
                   <th>پروژه</th>
-                  <th>سازمان</th>
                   <th>وضعیت</th>
                   <th>پیشرفت</th>
                   <th>وظایف</th>
+                  <th>
+                    تکمیل‌شده
+                  </th>
+                  <th>
+                    نرخ تکمیل
+                  </th>
+                  <th>موعد</th>
                 </tr>
               </thead>
 
               <tbody>
-                {visibleProjects.map(
+                {projects.map(
                   (project) => (
                     <tr
                       key={
-                        project.id
+                        project.project_id
                       }
                     >
                       <td>
-                        {project.title}
+                        {
+                          project.project_name
+                        }
                       </td>
 
                       <td>
-                        {project.organizationName ||
-                          "-"}
-                      </td>
-
-                      <td>
-                        {project.statusLabel ||
-                          project.status ||
-                          "-"}
+                        {getProjectStatusLabel(
+                          project.status
+                        )}
                       </td>
 
                       <td>
                         <div className="reports-table-progress">
                           <span>
-                            {Number(
-                              project.progress ||
-                                0
+                            {Math.round(
+                              Number(
+                                project.progress ||
+                                  0
+                              )
                             )}
                             %
                           </span>
@@ -593,11 +605,16 @@ function Reports() {
                           <div>
                             <i
                               style={{
-                                width:
-                                  `${Number(
-                                    project.progress ||
-                                      0
-                                  )}%`,
+                                width: `${Math.min(
+                                  100,
+                                  Math.max(
+                                    0,
+                                    Number(
+                                      project.progress ||
+                                        0
+                                    )
+                                  )
+                                )}%`,
                               }}
                             />
                           </div>
@@ -605,12 +622,31 @@ function Reports() {
                       </td>
 
                       <td>
-                        {Array.isArray(
-                          project.tasks
-                        )
-                          ? project.tasks
-                              .length
-                          : 0}
+                        {
+                          project.total_tasks
+                        }
+                      </td>
+
+                      <td>
+                        {
+                          project.completed_tasks
+                        }
+                      </td>
+
+                      <td>
+                        {Math.round(
+                          Number(
+                            project.task_completion_rate ||
+                              0
+                          )
+                        )}
+                        %
+                      </td>
+
+                      <td>
+                        {formatDate(
+                          project.due_date
+                        )}
                       </td>
                     </tr>
                   )
@@ -623,6 +659,5 @@ function Reports() {
     </section>
   );
 }
-
 
 export default Reports;
