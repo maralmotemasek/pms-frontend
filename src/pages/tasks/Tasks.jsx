@@ -157,7 +157,11 @@ function Tasks() {
 
         setTasks(
           Array.isArray(data)
-            ? data
+            ? data.filter(
+                (task) =>
+                  task.parentId === null ||
+                  task.parentId === undefined
+              )
             : []
         );
       } catch (loadError) {
@@ -856,6 +860,19 @@ function Tasks() {
                                 ? "dragging"
                                 : ""
                             }`}
+                            draggable={
+                              updatingTaskId !==
+                              task.id
+                            }
+                            onDragStart={(event) => {
+                              handleDragStart(
+                                event,
+                                task.id
+                              );
+                            }}
+                            onDragEnd={() => {
+                              handleDragEnd();
+                            }}
                             role="button"
                             tabIndex={0}
                             onClick={() =>
@@ -900,42 +917,7 @@ function Tasks() {
 
                               <div
                                 className="task-drag-handle"
-                                draggable={
-                                  updatingTaskId !==
-                                  task.id
-                                }
-                                role="button"
-                                tabIndex={0}
-                                title="برای جابه‌جایی بکشید"
-                                aria-label="جابه‌جایی وظیفه"
-                                onClick={(
-                                  event
-                                ) =>
-                                  event.stopPropagation()
-                                }
-                                onKeyDown={(
-                                  event
-                                ) =>
-                                  event.stopPropagation()
-                                }
-                                onDragStart={(
-                                  event
-                                ) => {
-                                  event.stopPropagation();
-
-                                  handleDragStart(
-                                    event,
-                                    task.id
-                                  );
-                                }}
-                                onDragEnd={(
-                                  event
-                                ) => {
-                                  event.stopPropagation();
-
-                                  handleDragEnd();
-                                }}
-                              >
+                                >
                                 <GripVertical
                                   size={17}
                                   strokeWidth={2}
@@ -1051,3 +1033,5 @@ function Tasks() {
 
 
 export default Tasks;
+
+

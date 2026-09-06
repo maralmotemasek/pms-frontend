@@ -1,5 +1,17 @@
-import { Controller, useForm } from "react-hook-form";
-import { useNavigate, useParams } from "react-router-dom";
+﻿import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Controller,
+  useForm,
+} from "react-hook-form";
+
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 
 import DatePickerModule from "react-multi-date-picker";
 import DateObject from "react-date-object";
@@ -13,237 +25,671 @@ import {
   CalendarDays,
 } from "lucide-react";
 
+import {
+  assignTask,
+  getMyTasks,
+  getProjectTasks,
+  getTask,
+  getTaskOrganizations,
+  getTaskProjectMembers,
+  getTaskProjects,
+  updateTask,
+} from "../../services/taskService";
+
 import "./CreateTask.css";
 
 
 const DatePicker =
-  DatePickerModule?.default ?? DatePickerModule;
+  DatePickerModule?.default ??
+  DatePickerModule;
 
 
-const mockProjects = [
-  {
-    id: "1",
-    title: "سامانه مدیریت پروژه",
-  },
-  {
-    id: "2",
-    title: "پرتال سازمانی",
-  },
-  {
-    id: "3",
-    title: "سیستم انبارداری",
-  },
-];
+const getApiErrorMessage = (
+  error
+) => {
+  const detail =
+    error?.response?.data?.detail;
+
+  if (
+    typeof detail === "string"
+  ) {
+    return detail;
+  }
+
+  if (
+    Array.isArray(detail)
+  ) {
+    return detail
+      .map(
+        (item) =>
+          item?.msg
+      )
+      .filter(Boolean)
+      .join(" - ");
+  }
+
+  return (
+    error?.message ||
+    "خطایی در ارتباط با سرور رخ داد."
+  );
+};
 
 
-const mockMembers = [
-  {
-    id: "1",
-    name: "علی رضایی",
-  },
-  {
-    id: "2",
-    name: "سارا محمدی",
-  },
-  {
-    id: "3",
-    name: "رضا احمدی",
-  },
-  {
-    id: "4",
-    name: "مریم حسینی",
-  },
-  {
-    id: "5",
-    name: "امیر کریمی",
-  },
-  {
-    id: "6",
-    name: "نگار محمدی",
-  },
-];
+const getOrganizationName = (
+  organization
+) => {
+  return (
+    organization?.name ||
+    organization?.title ||
+    `سازمان #${organization?.id}`
+  );
+};
 
 
-const mockTasks = [
-  {
-    id: 1,
-    title: "ایجاد ماژول پروفایل کاربران نهایی",
-    description:
-      "طراحی و پیاده‌سازی صفحه پروفایل کاربران شامل اطلاعات شخصی، تصویر پروفایل و امکان ویرایش اطلاعات.",
-    project: "1",
-    assignee: "1",
-    priority: "medium",
-    status: "todo",
-    deadline: "1405/07/15",
-    estimatedHours: "10",
-  },
-
-  {
-    id: 2,
-    title: "تنظیم تست‌های واحد سیستم پرداخت",
-    description:
-      "نوشتن تست‌های واحد برای بخش‌های اصلی سیستم پرداخت.",
-    project: "2",
-    assignee: "2",
-    priority: "low",
-    status: "todo",
-    deadline: "1405/07/18",
-    estimatedHours: "8",
-  },
-
-  {
-    id: 3,
-    title: "یکپارچه‌سازی متدهای پرداخت نقدی",
-    description:
-      "اتصال متدهای پرداخت نقدی به جریان اصلی ثبت پرداخت.",
-    project: "3",
-    assignee: "3",
-    priority: "high",
-    status: "doing",
-    deadline: "1405/07/12",
-    estimatedHours: "14",
-  },
-
-  {
-    id: 4,
-    title: "اصلاح فرم ورود و استایل دکمه‌ها",
-    description:
-      "اصلاح رابط کاربری فرم ورود و هماهنگ کردن استایل دکمه‌ها.",
-    project: "1",
-    assignee: "4",
-    priority: "high",
-    status: "doing",
-    deadline: "1405/07/10",
-    estimatedHours: "6",
-  },
-
-  {
-    id: 5,
-    title: "تنظیم ساختار دیتابیس لوکال",
-    description:
-      "تنظیم محیط محلی دیتابیس برای اجرای پروژه.",
-    project: "3",
-    assignee: "5",
-    priority: "low",
-    status: "done",
-    deadline: "1405/07/05",
-    estimatedHours: "5",
-  },
-
-  {
-    id: 6,
-    title: "ارتقا پکیج‌های توسعه وب",
-    description:
-      "بررسی و ارتقا پکیج‌های Frontend.",
-    project: "2",
-    assignee: "6",
-    priority: "medium",
-    status: "done",
-    deadline: "1405/07/08",
-    estimatedHours: "4",
-  },
-];
+const getProjectName = (
+  project
+) => {
+  return (
+    project?.name ||
+    project?.title ||
+    `پروژه #${project?.id}`
+  );
+};
 
 
-function createPersianDate(date) {
-  if (!date) {
+const getMemberName = (
+  member
+) => {
+  return (
+    member?.full_name ||
+    member?.username ||
+    member?.user?.full_name ||
+    member?.user?.username ||
+    (
+      member?.user_id
+        ? `کاربر #${member.user_id}`
+        : "کاربر"
+    )
+  );
+};
+
+
+const createPersianDate = (
+  value
+) => {
+  if (!value) {
+    return null;
+  }
+
+  const date =
+    new Date(
+      `${value}T00:00:00`
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return null;
   }
 
   return new DateObject({
     date,
-    format: "YYYY/MM/DD",
-    calendar: persian,
-    locale: persian_fa,
-  });
-}
+  }).convert(
+    persian,
+    persian_fa
+  );
+};
+
+
+const datePickerToGregorian = (
+  value
+) => {
+  if (!value) {
+    return null;
+  }
+
+  const date =
+    value?.toDate?.();
+
+  if (
+    !(date instanceof Date) ||
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      "0"
+    );
+
+  return `${year}-${month}-${day}`;
+};
 
 
 function EditTask() {
-  const { id } = useParams();
+  const { id } =
+    useParams();
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
+
+  const taskId =
+    Number(id);
 
 
-  const task = mockTasks.find(
-    (item) => item.id === Number(id)
-  );
+  const [
+    task,
+    setTask,
+  ] = useState(null);
+
+  const [
+    taskOrganization,
+    setTaskOrganization,
+  ] = useState(null);
+
+  const [
+    taskProject,
+    setTaskProject,
+  ] = useState(null);
+
+  const [
+    members,
+    setMembers,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    apiError,
+    setApiError,
+  ] = useState("");
+
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
 
 
   const {
     register,
     control,
     handleSubmit,
-    formState: { errors },
+    reset,
+    formState: {
+      errors,
+    },
   } = useForm({
     defaultValues: {
-      title: task?.title || "",
-      description: task?.description || "",
-      project: task?.project || "",
-      assignee: task?.assignee || "",
-      priority: task?.priority || "medium",
-      status: task?.status || "todo",
-      deadline: createPersianDate(
-        task?.deadline
-      ),
-      estimatedHours:
-        task?.estimatedHours || "",
+      title: "",
+      description: "",
+      project: "",
+      assignee: "",
+      priority: "medium",
+      status: "todo",
+      deadline: null,
+      estimatedHours: "",
     },
   });
 
 
-  const onSubmit = (data) => {
-    const updatedTask = {
-      id: Number(id),
+  // =========================
+  // FIND TASK CONTEXT
+  // =========================
 
-      ...data,
+  useEffect(() => {
+    let active = true;
 
-      deadline:
-        data.deadline?.format?.(
-          "YYYY/MM/DD"
-        ) || null,
+    const loadTask =
+      async () => {
+
+        setLoading(true);
+        setApiError("");
+
+        try {
+          if (
+            !Number.isInteger(taskId) ||
+            taskId <= 0
+          ) {
+            throw new Error(
+              "شناسه وظیفه نامعتبر است."
+            );
+          }
+
+          const organizations =
+            await getTaskOrganizations();
+
+          let resolvedOrganization =
+            null;
+
+          let resolvedProject =
+            null;
+
+          let taskSummary =
+            null;
+
+
+          // First try the user's own task list.
+          const myTasks =
+            await getMyTasks();
+
+          taskSummary =
+            myTasks.find(
+              (item) =>
+                Number(item.id) ===
+                taskId
+            ) || null;
+
+
+          if (
+            taskSummary?.projectId
+          ) {
+            for (
+              const organization
+              of organizations
+            ) {
+              const projects =
+                await getTaskProjects(
+                  organization.id
+                );
+
+              const matchingProject =
+                projects.find(
+                  (project) =>
+                    Number(project.id) ===
+                    Number(
+                      taskSummary.projectId
+                    )
+                );
+
+              if (
+                matchingProject
+              ) {
+                resolvedOrganization =
+                  organization;
+
+                resolvedProject =
+                  matchingProject;
+
+                break;
+              }
+            }
+          }
+
+
+          // Fallback for a task that is not in /users/me/tasks.
+          if (
+            !resolvedOrganization ||
+            !resolvedProject
+          ) {
+            outer:
+            for (
+              const organization
+              of organizations
+            ) {
+              const projects =
+                await getTaskProjects(
+                  organization.id
+                );
+
+              for (
+                const project
+                of projects
+              ) {
+                try {
+                  const projectTasks =
+                    await getProjectTasks(
+                      organization.id,
+                      project.id
+                    );
+
+                  const matchingTask =
+                    projectTasks.find(
+                      (item) =>
+                        Number(item.id) ===
+                        taskId
+                    );
+
+                  if (
+                    matchingTask
+                  ) {
+                    resolvedOrganization =
+                      organization;
+
+                    resolvedProject =
+                      project;
+
+                    break outer;
+                  }
+                } catch (
+                  projectTaskError
+                ) {
+                  console.warn(
+                    "Could not inspect project tasks while resolving task context:",
+                    projectTaskError
+                  );
+                }
+              }
+            }
+          }
+
+
+          if (
+            !resolvedOrganization ||
+            !resolvedProject
+          ) {
+            throw new Error(
+              "پروژه مربوط به این وظیفه پیدا نشد."
+            );
+          }
+
+
+          const [
+            fullTask,
+            projectMembers,
+          ] = await Promise.all([
+            getTask(
+              resolvedOrganization.id,
+              resolvedProject.id,
+              taskId
+            ),
+
+            getTaskProjectMembers(
+              resolvedOrganization.id,
+              resolvedProject.id
+            ),
+          ]);
+
+
+          if (!active) {
+            return;
+          }
+
+
+          setTask(
+            fullTask
+          );
+
+          setTaskOrganization(
+            resolvedOrganization
+          );
+
+          setTaskProject(
+            resolvedProject
+          );
+
+          setMembers(
+            Array.isArray(
+              projectMembers
+            )
+              ? projectMembers
+              : []
+          );
+
+
+          reset({
+            title:
+              fullTask.title || "",
+
+            description:
+              fullTask.description || "",
+
+            project:
+              String(
+                resolvedProject.id
+              ),
+
+            assignee:
+              fullTask.assigneeId ===
+                null ||
+              fullTask.assigneeId ===
+                undefined
+                ? ""
+                : String(
+                    fullTask.assigneeId
+                  ),
+
+            priority:
+              fullTask.priority ||
+              "medium",
+
+            status:
+              fullTask.status ||
+              "todo",
+
+            deadline:
+              createPersianDate(
+                fullTask.dueDate ||
+                fullTask.deadline
+              ),
+
+            estimatedHours:
+              fullTask.estimatedHours ===
+                "" ||
+              fullTask.estimatedHours ===
+                null ||
+              fullTask.estimatedHours ===
+                undefined
+                ? ""
+                : String(
+                    fullTask.estimatedHours
+                  ),
+          });
+
+        } catch (error) {
+          if (!active) {
+            return;
+          }
+
+          console.error(
+            "Failed to load task for editing:",
+            error
+          );
+
+          setApiError(
+            getApiErrorMessage(
+              error
+            )
+          );
+
+          setTask(null);
+        } finally {
+          if (active) {
+            setLoading(false);
+          }
+        }
+      };
+
+
+    loadTask();
+
+
+    return () => {
+      active = false;
+    };
+  }, [
+    taskId,
+    reset,
+  ]);
+
+
+  // =========================
+  // UPDATE TASK
+  // =========================
+
+  const onSubmit =
+    async (data) => {
+
+      if (
+        !task ||
+        !taskOrganization ||
+        !taskProject
+      ) {
+        return;
+      }
+
+      setSubmitting(true);
+      setApiError("");
+
+      try {
+        const deadline =
+          datePickerToGregorian(
+            data.deadline
+          );
+
+
+        await updateTask(
+          taskOrganization.id,
+          taskProject.id,
+          taskId,
+          {
+            title:
+              data.title,
+
+            description:
+              data.description,
+
+            priority:
+              data.priority,
+
+            status:
+              data.status,
+
+            dueDate:
+              deadline,
+
+            estimatedHours:
+              data.estimatedHours === ""
+                ? null
+                : Number(
+                    data.estimatedHours
+                  ),
+          }
+        );
+
+
+        const nextAssigneeId =
+          data.assignee
+            ? Number(
+                data.assignee
+              )
+            : null;
+
+        const currentAssigneeId =
+          task.assigneeId ??
+          null;
+
+
+        if (
+          nextAssigneeId !==
+          currentAssigneeId
+        ) {
+          await assignTask(
+            taskOrganization.id,
+            taskProject.id,
+            taskId,
+            nextAssigneeId
+          );
+        }
+
+
+        navigate(
+          "/tasks",
+          {
+            replace: true,
+          }
+        );
+
+      } catch (error) {
+        console.error(
+          "Update task failed:",
+          error
+        );
+
+        setApiError(
+          getApiErrorMessage(
+            error
+          )
+        );
+      } finally {
+        setSubmitting(false);
+      }
     };
 
 
-    console.log(
-      "Update Task:",
-      updatedTask
+  // =========================
+  // LOADING
+  // =========================
+
+  if (loading) {
+    return (
+      <section className="create-task-page">
+        <div className="create-task-card">
+          <h2>
+            در حال دریافت اطلاعات وظیفه...
+          </h2>
+        </div>
+      </section>
     );
+  }
 
 
-    /*
-      بعداً وقتی API آماده شد:
-
-      await updateTask(id, updatedTask)
-
-      navigate(`/tasks/${id}`)
-    */
-  };
-
+  // =========================
+  // NOT FOUND / ERROR
+  // =========================
 
   if (!task) {
     return (
       <section className="create-task-page">
-
         <div className="create-task-card">
 
           <h2>
-            وظیفه مورد نظر پیدا نشد.
+            وظیفه مورد نظر در دسترس نیست.
           </h2>
 
+          {apiError && (
+            <div
+              className="task-form-error"
+              role="alert"
+            >
+              {apiError}
+            </div>
+          )}
 
           <button
             type="button"
             className="back-to-tasks-button"
             onClick={() =>
-              navigate("/tasks")
+              navigate(
+                "/tasks"
+              )
             }
           >
             بازگشت به وظایف
           </button>
 
         </div>
-
       </section>
     );
   }
@@ -257,15 +703,13 @@ function EditTask() {
       <div className="create-task-header">
 
         <div>
-
           <h2>
             ویرایش وظیفه
           </h2>
 
           <p>
-            اطلاعات وظیفه را ویرایش کرده و تغییرات را ذخیره کنید.
+            اطلاعات وظیفه را ویرایش کرده و تغییرات را در سرور ذخیره کنید.
           </p>
-
         </div>
 
 
@@ -273,17 +717,33 @@ function EditTask() {
           type="button"
           className="back-to-tasks-button"
           onClick={() =>
-            navigate(`/tasks/${id}`)
+            navigate(
+              "/tasks"
+            )
           }
         >
+          <ArrowRight
+            size={18}
+          />
 
-          <ArrowRight size={18} />
-
-          بازگشت به جزئیات وظیفه
-
+          بازگشت به وظایف
         </button>
 
       </div>
+
+
+      {apiError && (
+        <div
+          className="task-form-error"
+          role="alert"
+          style={{
+            marginBottom:
+              "16px",
+          }}
+        >
+          {apiError}
+        </div>
+      )}
 
 
       {/* FORM */}
@@ -292,7 +752,11 @@ function EditTask() {
 
         <form
           className="create-task-form"
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={
+            handleSubmit(
+              onSubmit
+            )
+          }
         >
 
           {/* TITLE */}
@@ -304,27 +768,40 @@ function EditTask() {
               <span>*</span>
             </label>
 
-
             <input
               type="text"
+              disabled={
+                submitting
+              }
+              {...register(
+                "title",
+                {
+                  required:
+                    "عنوان وظیفه الزامی است",
 
-              {...register("title", {
-                required:
-                  "عنوان وظیفه الزامی است",
+                  minLength: {
+                    value: 2,
 
-                minLength: {
-                  value: 3,
+                    message:
+                      "عنوان وظیفه حداقل باید ۲ کاراکتر باشد",
+                  },
 
-                  message:
-                    "عنوان وظیفه حداقل باید ۳ کاراکتر باشد",
-                },
-              })}
+                  maxLength: {
+                    value: 200,
+
+                    message:
+                      "عنوان وظیفه حداکثر می‌تواند ۲۰۰ کاراکتر باشد",
+                  },
+                }
+              )}
             />
-
 
             {errors.title && (
               <small className="task-form-error">
-                {errors.title.message}
+                {
+                  errors.title
+                    .message
+                }
               </small>
             )}
 
@@ -339,10 +816,36 @@ function EditTask() {
               توضیحات وظیفه
             </label>
 
-
             <textarea
               rows="5"
-              {...register("description")}
+              disabled={
+                submitting
+              }
+              {...register(
+                "description"
+              )}
+            />
+
+          </div>
+
+
+          {/* ORGANIZATION */}
+
+          <div className="task-form-group">
+
+            <label>
+              سازمان
+            </label>
+
+            <input
+              type="text"
+              value={
+                getOrganizationName(
+                  taskOrganization
+                )
+              }
+              disabled
+              readOnly
             />
 
           </div>
@@ -354,43 +857,26 @@ function EditTask() {
 
             <label>
               پروژه
-              <span>*</span>
             </label>
 
-
             <select
-              {...register("project", {
-                required:
-                  "انتخاب پروژه الزامی است",
-              })}
-            >
-
-              <option value="">
-                پروژه را انتخاب کنید
-              </option>
-
-
-              {mockProjects.map(
-                (project) => (
-
-                  <option
-                    value={project.id}
-                    key={project.id}
-                  >
-                    {project.title}
-                  </option>
-
-                )
+              disabled
+              {...register(
+                "project"
               )}
-
+            >
+              <option
+                value={
+                  taskProject.id
+                }
+              >
+                {
+                  getProjectName(
+                    taskProject
+                  )
+                }
+              </option>
             </select>
-
-
-            {errors.project && (
-              <small className="task-form-error">
-                {errors.project.message}
-              </small>
-            )}
 
           </div>
 
@@ -401,43 +887,42 @@ function EditTask() {
 
             <label>
               مسئول انجام
-              <span>*</span>
             </label>
 
-
             <select
-              {...register("assignee", {
-                required:
-                  "انتخاب مسئول وظیفه الزامی است",
-              })}
+              disabled={
+                submitting
+              }
+              {...register(
+                "assignee"
+              )}
             >
 
               <option value="">
-                مسئول وظیفه را انتخاب کنید
+                بدون مسئول
               </option>
 
-
-              {mockMembers.map(
+              {members.map(
                 (member) => (
-
                   <option
-                    value={member.id}
-                    key={member.id}
+                    value={
+                      member.user_id
+                    }
+                    key={
+                      member.id ??
+                      member.user_id
+                    }
                   >
-                    {member.name}
+                    {
+                      getMemberName(
+                        member
+                      )
+                    }
                   </option>
-
                 )
               )}
 
             </select>
-
-
-            {errors.assignee && (
-              <small className="task-form-error">
-                {errors.assignee.message}
-              </small>
-            )}
 
           </div>
 
@@ -451,12 +936,17 @@ function EditTask() {
               <span>*</span>
             </label>
 
-
             <select
-              {...register("priority", {
-                required:
-                  "انتخاب اولویت الزامی است",
-              })}
+              disabled={
+                submitting
+              }
+              {...register(
+                "priority",
+                {
+                  required:
+                    "انتخاب اولویت الزامی است",
+                }
+              )}
             >
 
               <option value="low">
@@ -469,6 +959,10 @@ function EditTask() {
 
               <option value="high">
                 اولویت بالا
+              </option>
+
+              <option value="urgent">
+                فوری
               </option>
 
             </select>
@@ -485,12 +979,17 @@ function EditTask() {
               <span>*</span>
             </label>
 
-
             <select
-              {...register("status", {
-                required:
-                  "انتخاب وضعیت الزامی است",
-              })}
+              disabled={
+                submitting
+              }
+              {...register(
+                "status",
+                {
+                  required:
+                    "انتخاب وضعیت الزامی است",
+                }
+              )}
             >
 
               <option value="todo">
@@ -501,8 +1000,16 @@ function EditTask() {
                 در حال انجام
               </option>
 
+              <option value="review">
+                در حال بررسی
+              </option>
+
               <option value="done">
                 تکمیل شده
+              </option>
+
+              <option value="cancelled">
+                لغو شده
               </option>
 
             </select>
@@ -516,9 +1023,7 @@ function EditTask() {
 
             <label>
               مهلت انجام
-              <span>*</span>
             </label>
-
 
             <div className="task-date-wrapper">
 
@@ -527,29 +1032,36 @@ function EditTask() {
                 className="task-date-icon"
               />
 
-
               <Controller
                 name="deadline"
 
-                control={control}
+                control={
+                  control
+                }
 
-                rules={{
-                  required:
-                    "تعیین مهلت انجام الزامی است",
-                }}
-
-                render={({ field }) => (
-
+                render={({
+                  field,
+                }) => (
                   <DatePicker
-                    value={field.value}
+                    value={
+                      field.value
+                    }
 
                     onChange={
                       field.onChange
                     }
 
-                    calendar={persian}
+                    disabled={
+                      submitting
+                    }
 
-                    locale={persian_fa}
+                    calendar={
+                      persian
+                    }
+
+                    locale={
+                      persian_fa
+                    }
 
                     format="YYYY/MM/DD"
 
@@ -561,23 +1073,15 @@ function EditTask() {
 
                     placeholder="تاریخ را انتخاب کنید"
                   />
-
                 )}
               />
 
             </div>
 
-
-            {errors.deadline && (
-              <small className="task-form-error">
-                {errors.deadline.message}
-              </small>
-            )}
-
           </div>
 
 
-          {/* HOURS */}
+          {/* ESTIMATED HOURS */}
 
           <div className="task-form-group">
 
@@ -585,34 +1089,33 @@ function EditTask() {
               زمان تخمینی
             </label>
 
-
             <div className="estimated-hours-wrapper">
 
               <input
                 type="number"
-
-                min="0"
-
+                min="1"
+                step="0.5"
+                disabled={
+                  submitting
+                }
                 {...register(
                   "estimatedHours",
                   {
                     min: {
-                      value: 0,
+                      value: 1,
 
                       message:
-                        "زمان تخمینی نمی‌تواند منفی باشد",
+                        "زمان تخمینی باید حداقل یک ساعت باشد",
                     },
                   }
                 )}
               />
-
 
               <span>
                 ساعت
               </span>
 
             </div>
-
 
             {errors.estimatedHours && (
               <small className="task-form-error">
@@ -633,29 +1136,36 @@ function EditTask() {
 
             <button
               type="button"
-
               className="cancel-task-button"
-
+              disabled={
+                submitting
+              }
               onClick={() =>
-                navigate(`/tasks/${id}`)
+                navigate(
+                  "/tasks"
+                )
               }
             >
-
               انصراف
-
             </button>
 
 
             <button
               type="submit"
-
               className="save-task-button"
+              disabled={
+                submitting
+              }
             >
+              <Save
+                size={18}
+              />
 
-              <Save size={18} />
-
-              ذخیره تغییرات
-
+              {
+                submitting
+                  ? "در حال ذخیره..."
+                  : "ذخیره تغییرات"
+              }
             </button>
 
           </div>
