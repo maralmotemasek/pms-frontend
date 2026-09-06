@@ -26,20 +26,8 @@ import {
 } from "recharts";
 
 import {
-  getCurrentUser,
-} from "../../services/authService";
-
-import {
-  getMyOrganizations,
-} from "../../services/organizationService";
-
-import {
-  getWorkspaceProjects,
-} from "../../data/projectWorkspaceStore";
-
-import {
-  canViewWorkspaceProject,
-} from "../../utils/projectAccess";
+  getDashboard,
+} from "../../services/dashboardService";
 
 import "./Dashboard.css";
 
@@ -47,48 +35,65 @@ import "./Dashboard.css";
 const TASK_COLORS = [
   "#f59e0b",
   "#2563eb",
+  "#8b5cf6",
   "#10b981",
+  "#ef4444",
 ];
 
 
 const PROJECT_STATUS_LABELS = {
+  TODO: "در انتظار",
+  PLANNED: "برنامه‌ریزی شده",
+  IN_PROGRESS: "در حال انجام",
   "in-progress": "در حال انجام",
+  IN_REVIEW: "در انتظار تأیید",
+  REVIEW: "در انتظار تأیید",
+  COMPLETED: "تکمیل شده",
+  DONE: "تکمیل شده",
+  CANCELLED: "لغو شده",
+  DELAYED: "با تأخیر",
   delayed: "با تأخیر",
-  review: "در انتظار تأیید",
-  completed: "تکمیل شده",
 };
 
 
-function normalizeTaskStatus(status) {
+function getProjectStatusLabel(status) {
+  return (
+    PROJECT_STATUS_LABELS[status] ||
+    PROJECT_STATUS_LABELS[
+      String(status || "").toUpperCase()
+    ] ||
+    status ||
+    "-"
+  );
+}
+
+
+function getProjectStatusClass(status) {
   const normalized =
     String(status || "")
       .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .replaceAll("_", "-");
 
   if (
-    [
-      "done",
-      "completed",
-      "انجام شده",
-      "تکمیل شده",
-      "تکمیل‌شده",
-    ].includes(normalized)
+    normalized === "done" ||
+    normalized === "completed"
   ) {
-    return "done";
+    return "completed";
+  }
+
+  if (normalized === "delayed") {
+    return "delayed";
   }
 
   if (
-    [
-      "doing",
-      "in-progress",
-      "in_progress",
-      "در حال انجام",
-    ].includes(normalized)
+    normalized === "review" ||
+    normalized === "in-review"
   ) {
-    return "doing";
+    return "review";
   }
 
-  return "todo";
+  return "in-progress";
 }
 
 
@@ -103,21 +108,28 @@ function shortenTitle(title) {
 }
 
 
+function formatDate(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat(
+    "fa-IR"
+  ).format(date);
+}
+
+
 function Dashboard() {
   const [
-    currentUser,
-    setCurrentUser,
+    dashboard,
+    setDashboard,
   ] = useState(null);
-
-  const [
-    organizations,
-    setOrganizations,
-  ] = useState([]);
-
-  const [
-    projects,
-    setProjects,
-  ] = useState([]);
 
   const [
     loading,
@@ -133,33 +145,14 @@ function Dashboard() {
   useEffect(() => {
     const loadDashboard =
       async () => {
-
         setLoading(true);
         setError("");
 
         try {
-          const [
-            user,
-            organizationList,
-          ] =
-            await Promise.all([
-              getCurrentUser(),
-              getMyOrganizations(),
-            ]);
+          const data =
+            await getDashboard();
 
-          setCurrentUser(user);
-
-          setOrganizations(
-            Array.isArray(
-              organizationList
-            )
-              ? organizationList
-              : []
-          );
-
-          setProjects(
-            getWorkspaceProjects()
-          );
+          setDashboard(data);
         } catch (loadError) {
           console.error(
             "Load dashboard error:",
@@ -178,73 +171,85 @@ function Dashboard() {
   }, []);
 
 
-  const visibleProjects =
-    useMemo(() => {
-
-      if (!currentUser) {
-        return [];
-      }
-
-      return projects.filter(
-        (project) =>
-          canViewWorkspaceProject(
-            currentUser,
-            project,
-            organizations
-          )
-      );
-    }, [
-      currentUser,
-      projects,
-      organizations,
-    ]);
-
-
   const dashboardData =
     useMemo(() => {
+      const summary =
+        dashboard?.summary || {};
 
-      const tasks =
-        visibleProjects.flatMap(
-          (project) =>
-            Array.isArray(
-              project.tasks
-            )
-              ? project.tasks
-              : []
+      const projectProgress =
+        Array.isArray(
+          dashboard?.project_progress
+        )
+          ? dashboard.project_progress
+          : [];
+
+      const projectSummary =
+        Array.isArray(
+          dashboard?.project_summary
+        )
+          ? dashboard.project_summary
+          : [];
+
+      const taskStatus =
+        dashboard?.task_status || {};
+
+      const progressChart =
+        projectProgress.map(
+          (project) => ({
+            id: project.project_id,
+            name:
+              shortenTitle(
+                project.project_name
+              ),
+            progress:
+              Number(
+                project.progress || 0
+              ),
+          })
         );
 
-      const completedTasks =
-        tasks.filter(
-          (task) =>
-            normalizeTaskStatus(
-              task.status
-            ) === "done"
-        ).length;
-
-      const doingTasks =
-        tasks.filter(
-          (task) =>
-            normalizeTaskStatus(
-              task.status
-            ) === "doing"
-        ).length;
-
-      const todoTasks =
-        tasks.length -
-        completedTasks -
-        doingTasks;
-
-      const delayedProjects =
-        visibleProjects.filter(
-          (project) =>
-            project.status ===
-            "delayed"
-        ).length;
+      const taskStatusChart = [
+        {
+          name: "در انتظار",
+          value:
+            Number(
+              taskStatus.TODO || 0
+            ),
+        },
+        {
+          name: "در حال انجام",
+          value:
+            Number(
+              taskStatus.IN_PROGRESS || 0
+            ),
+        },
+        {
+          name: "در انتظار تأیید",
+          value:
+            Number(
+              taskStatus.IN_REVIEW || 0
+            ),
+        },
+        {
+          name: "تکمیل شده",
+          value:
+            Number(
+              taskStatus.DONE || 0
+            ),
+        },
+        {
+          name: "لغو شده",
+          value:
+            Number(
+              taskStatus.CANCELLED || 0
+            ),
+        },
+      ];
 
       const averageProgress =
-        visibleProjects.length > 0
+        projectProgress.length > 0
           ? Math.round(
-              visibleProjects.reduce(
+              projectProgress.reduce(
                 (
                   total,
                   project
@@ -256,60 +261,42 @@ function Dashboard() {
                   ),
                 0
               ) /
-                visibleProjects.length
+                projectProgress.length
             )
           : 0;
 
-      const progressChart =
-        visibleProjects.map(
-          (project) => ({
-            name:
-              shortenTitle(
-                project.title
-              ),
-            progress:
-              Number(
-                project.progress ||
-                0
-              ),
-          })
-        );
-
-      const taskStatusChart = [
-        {
-          name: "در انتظار",
-          value: todoTasks,
-        },
-        {
-          name: "در حال انجام",
-          value: doingTasks,
-        },
-        {
-          name: "تکمیل شده",
-          value: completedTasks,
-        },
-      ];
-
       return {
         totalProjects:
-          visibleProjects.length,
+          Number(
+            summary.my_projects || 0
+          ),
 
         totalTasks:
-          tasks.length,
+          Number(
+            summary.my_tasks || 0
+          ),
 
-        completedTasks,
+        completedTasks:
+          Number(
+            summary.my_completed_tasks ||
+            0
+          ),
 
-        delayedProjects,
+        delayedProjects:
+          Number(
+            summary.my_delayed_projects ||
+            0
+          ),
 
         averageProgress,
 
         progressChart,
 
         taskStatusChart,
+
+        projectSummary,
       };
-    }, [
-      visibleProjects,
-    ]);
+    }, [dashboard]);
 
 
   if (loading) {
@@ -681,7 +668,7 @@ function Dashboard() {
         </div>
 
 
-        {visibleProjects.length ===
+        {dashboardData.projectSummary.length ===
         0 ? (
 
           <div className="dashboard-chart-empty">
@@ -701,10 +688,6 @@ function Dashboard() {
                   </th>
 
                   <th>
-                    سازمان
-                  </th>
-
-                  <th>
                     وضعیت
                   </th>
 
@@ -713,7 +696,11 @@ function Dashboard() {
                   </th>
 
                   <th>
-                    اعضا
+                    موعد پایان
+                  </th>
+
+                  <th>
+                    تأخیر
                   </th>
                 </tr>
               </thead>
@@ -721,39 +708,33 @@ function Dashboard() {
 
               <tbody>
 
-                {visibleProjects
+                {dashboardData.projectSummary
                   .slice(0, 6)
                   .map(
                     (project) => (
 
                       <tr
                         key={
-                          project.id
+                          project.project_id
                         }
                       >
 
                         <td>
                           {
-                            project.title
-                          }
-                        </td>
-
-                        <td>
-                          {
-                            project.organizationName ||
-                            "سازمان"
+                            project.project_name
                           }
                         </td>
 
                         <td>
                           <span
-                            className={`dashboard-project-status status-${project.status}`}
+                            className={`dashboard-project-status status-${getProjectStatusClass(
+                              project.status
+                            )}`}
                           >
                             {
-                              PROJECT_STATUS_LABELS[
+                              getProjectStatusLabel(
                                 project.status
-                              ] ||
-                              "در حال انجام"
+                              )
                             }
                           </span>
                         </td>
@@ -764,9 +745,11 @@ function Dashboard() {
 
                             <span>
                               {
-                                Number(
-                                  project.progress ||
-                                  0
+                                Math.round(
+                                  Number(
+                                    project.progress ||
+                                    0
+                                  )
                                 )
                               }
                               %
@@ -793,11 +776,17 @@ function Dashboard() {
 
                         <td>
                           {
-                            Array.isArray(
-                              project.members
+                            formatDate(
+                              project.due_date
                             )
-                              ? project.members.length
-                              : 0
+                          }
+                        </td>
+
+                        <td>
+                          {
+                            project.is_delayed
+                              ? "بله"
+                              : "خیر"
                           }
                         </td>
 
