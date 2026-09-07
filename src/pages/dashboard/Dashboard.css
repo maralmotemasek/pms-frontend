@@ -1,0 +1,459 @@
+﻿.dashboard-page {
+  width: 100%;
+  direction: rtl;
+  color: #1e293b;
+}
+
+.dashboard-heading {
+  margin-bottom: 22px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.dashboard-heading h2 {
+  margin: 0;
+
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.dashboard-heading p {
+  margin: 7px 0 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.dashboard-average-progress {
+  min-width: 190px;
+
+  padding: 12px 16px;
+
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+
+  background-color: #eff6ff;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.dashboard-average-progress span {
+  color: #475569;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dashboard-average-progress strong {
+  color: #2563eb;
+
+  font-size: 20px;
+  font-weight: 800;
+}
+
+
+.dashboard-stats {
+  margin-bottom: 20px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 16px;
+}
+
+.dashboard-stat-card {
+  min-height: 112px;
+
+  padding: 19px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  background-color: #ffffff;
+
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.dashboard-stat-icon {
+  width: 45px;
+  height: 45px;
+
+  flex-shrink: 0;
+
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-stat-icon.blue {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.dashboard-stat-icon.purple {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+}
+
+.dashboard-stat-icon.green {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.dashboard-stat-icon.orange {
+  background-color: #fff7ed;
+  color: #ea580c;
+}
+
+.dashboard-stat-card div:last-child {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.dashboard-stat-card span {
+  color: #64748b;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dashboard-stat-card strong {
+  color: #0f172a;
+
+  font-size: 25px;
+  font-weight: 800;
+}
+
+
+.dashboard-charts {
+  margin-bottom: 20px;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 2fr)
+    minmax(300px, 1fr);
+
+  gap: 16px;
+}
+
+.dashboard-panel {
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  background-color: #ffffff;
+}
+
+.progress-panel,
+.task-status-panel {
+  min-height: 365px;
+
+  padding: 20px;
+}
+
+.dashboard-panel-heading {
+  margin-bottom: 18px;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.dashboard-panel-heading h3 {
+  margin: 0;
+
+  color: #1e293b;
+
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.dashboard-panel-heading p {
+  margin: 6px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 12px;
+}
+
+.dashboard-panel-heading > svg {
+  color: #64748b;
+}
+
+
+.dashboard-chart-container {
+  width: 100%;
+  height: 270px;
+
+  direction: ltr;
+}
+
+.dashboard-pie-container {
+  width: 100%;
+  height: 210px;
+
+  direction: ltr;
+}
+
+.dashboard-chart-empty {
+  min-height: 220px;
+
+  color: #94a3b8;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 13px;
+}
+
+
+.dashboard-chart-legend {
+  padding-top: 7px;
+
+  border-top: 1px solid #f1f5f9;
+
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.dashboard-legend-item {
+  display: grid;
+
+  grid-template-columns:
+    10px
+    1fr
+    auto;
+
+  align-items: center;
+  gap: 8px;
+
+  color: #475569;
+
+  font-size: 12px;
+}
+
+.dashboard-legend-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+}
+
+.dashboard-legend-item strong {
+  color: #1e293b;
+
+  font-size: 12px;
+}
+
+
+.dashboard-projects-panel {
+  padding: 20px;
+}
+
+.dashboard-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+.dashboard-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  font-size: 13px;
+}
+
+.dashboard-table th {
+  padding: 12px 14px;
+
+  background-color: #f8fafc;
+
+  color: #64748b;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  text-align: right;
+}
+
+.dashboard-table th:first-child {
+  border-radius:
+    0 8px 8px 0;
+}
+
+.dashboard-table th:last-child {
+  border-radius:
+    8px 0 0 8px;
+}
+
+.dashboard-table td {
+  padding: 15px 14px;
+
+  border-bottom:
+    1px solid #f1f5f9;
+
+  color: #334155;
+
+  vertical-align: middle;
+}
+
+.dashboard-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+
+.dashboard-project-status {
+  display: inline-flex;
+
+  padding: 5px 9px;
+
+  border-radius: 20px;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dashboard-project-status.status-in-progress {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.dashboard-project-status.status-delayed {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.dashboard-project-status.status-review {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+
+.dashboard-project-status.status-completed {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+
+.dashboard-progress-cell {
+  min-width: 130px;
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dashboard-progress-cell > span {
+  min-width: 32px;
+
+  color: #475569;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dashboard-progress-track {
+  width: 90px;
+  height: 6px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background-color: #e2e8f0;
+}
+
+.dashboard-progress-fill {
+  height: 100%;
+
+  border-radius: inherit;
+
+  background-color: #2563eb;
+}
+
+
+.dashboard-state {
+  min-height: 320px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+
+  background-color: #ffffff;
+
+  color: #64748b;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-error {
+  color: #dc2626;
+}
+
+
+@media (max-width: 1150px) {
+
+  .dashboard-stats {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-charts {
+    grid-template-columns:
+      1fr;
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .dashboard-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dashboard-average-progress {
+    width: 100%;
+  }
+
+  .dashboard-stats {
+    grid-template-columns:
+      1fr;
+  }
+
+  .dashboard-stat-card {
+    min-height: 96px;
+  }
+
+  .progress-panel,
+  .task-status-panel,
+  .dashboard-projects-panel {
+    padding: 15px;
+  }
+
+  .dashboard-table {
+    min-width: 700px;
+  }
+
+}

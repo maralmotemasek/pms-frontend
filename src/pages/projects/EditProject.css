@@ -1,0 +1,180 @@
+/* =========================
+   EDIT PROJECT HEADER
+========================= */
+
+.edit-project-card-header {
+  width: 100%;
+
+  margin-bottom: 24px;
+
+  padding-bottom: 18px;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+
+.edit-project-card-header > div {
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+
+.edit-project-card-header > div > span {
+  color: #94a3b8;
+
+  font-size: 11px;
+
+  font-weight: 600;
+}
+
+
+.edit-project-card-header strong {
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  color: #1e293b;
+
+  font-size: 15px;
+
+  font-weight: 700;
+}
+
+
+.edit-project-id {
+  flex-shrink: 0;
+
+  padding: 5px 10px;
+
+  border-radius: 7px;
+
+  background-color: #f1f5f9;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  direction: ltr;
+}
+
+
+/* =========================
+   SUCCESS MESSAGE
+========================= */
+
+.edit-project-success {
+  width: 100%;
+
+  margin-bottom: 22px;
+
+  padding: 11px 14px;
+
+  border: 1px solid #bbf7d0;
+
+  border-radius: 9px;
+
+  background-color: #f0fdf4;
+
+  color: #15803d;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  line-height: 1.8;
+}
+
+
+/* =========================
+   DOCUMENT META
+========================= */
+
+.edit-document-meta {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+
+.edit-document-meta > span:first-child {
+  color: #94a3b8;
+
+  font-size: 10px;
+}
+
+
+.existing-document-badge {
+  padding: 2px 7px;
+
+  border-radius: 20px;
+
+  background-color: #eff6ff;
+
+  color: #2563eb !important;
+
+  font-size: 9px !important;
+
+  font-weight: 700;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 600px) {
+
+  .edit-project-card-header {
+    margin-bottom: 20px;
+
+    padding-bottom: 15px;
+
+    gap: 12px;
+  }
+
+
+  .edit-project-card-header strong {
+    font-size: 13px;
+  }
+
+
+  .edit-project-id {
+    padding: 4px 8px;
+  }
+
+
+  .edit-project-success {
+    margin-bottom: 18px;
+
+    padding: 10px 12px;
+
+    font-size: 11px;
+  }
+
+
+  .edit-document-meta {
+    flex-wrap: wrap;
+
+    gap: 5px;
+  }
+
+}

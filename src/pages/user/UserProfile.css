@@ -1,0 +1,646 @@
+.user-profile-page {
+  width: 97%;
+
+  margin: 0 auto;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.user-profile-header {
+  margin-bottom: 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-start;
+
+  gap: 16px;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+.user-profile-header > div {
+  width: 100%;
+
+  text-align: right;
+}
+
+
+.user-profile-header h2 {
+  margin: 0 0 6px;
+
+  color: #0f172a;
+
+  font-size: 22px;
+
+  font-weight: 800;
+
+  text-align: right;
+}
+
+
+.user-profile-header p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  font-weight: 500;
+
+  text-align: right;
+}
+
+
+/* =========================
+   MAIN CARD
+========================= */
+
+.user-profile-card {
+  overflow: hidden;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 15px;
+
+  background: #ffffff;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+/* =========================
+   SUMMARY
+========================= */
+
+.user-profile-summary {
+  min-height: 145px;
+
+  padding: 25px;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f8fbff 0%,
+      #ffffff 65%
+    );
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-start;
+
+  gap: 16px;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+.user-profile-avatar {
+  width: 74px;
+
+  height: 74px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: #dbeafe;
+
+  color: #2563eb;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border: 5px solid #eff6ff;
+}
+
+
+.user-profile-main-info {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+.user-profile-main-info h3 {
+  width: 100%;
+
+  margin: 0 0 7px;
+
+  color: #0f172a;
+
+  font-size: 19px;
+
+  font-weight: 800;
+
+  text-align: right;
+}
+
+
+.user-profile-main-info span {
+  width: 100%;
+
+  color: #64748b;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  direction: rtl;
+
+  text-align: right;
+
+  display: block;
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.user-profile-status {
+  min-height: 33px;
+
+  padding: 0 11px;
+
+  border-radius: 999px;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 6px;
+
+  direction: rtl;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+.user-profile-status.status-active,
+.user-profile-status.status-true {
+  color: #047857;
+
+  background: #ecfdf5;
+}
+
+
+.user-profile-status.status-inactive,
+.user-profile-status.status-false {
+  color: #b45309;
+
+  background: #fffbeb;
+}
+
+
+.user-profile-status.status-blocked {
+  color: #dc2626;
+
+  background: #fef2f2;
+}
+
+
+.user-profile-status.status-unknown {
+  color: #475569;
+
+  background: #f1f5f9;
+}
+
+
+/* =========================
+   INFO GRID
+========================= */
+
+.user-profile-info-grid {
+  padding: 24px;
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 14px;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+/* =========================
+   INFO ITEM
+========================= */
+
+.user-info-item {
+  min-height: 82px;
+
+  padding: 14px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 11px;
+
+  background: #f8fafc;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: flex-start;
+
+  gap: 12px;
+
+  direction: rtl;
+
+  text-align: right;
+
+  transition: 0.2s;
+}
+
+
+.user-info-item:hover {
+  border-color: #cbd5e1;
+
+  background: #ffffff;
+}
+
+
+.user-info-icon {
+  width: 40px;
+
+  height: 40px;
+
+  flex-shrink: 0;
+
+  border-radius: 10px;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+
+.user-info-content {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  gap: 5px;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+.user-info-content span {
+  width: 100%;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  font-weight: 600;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+.user-info-content strong {
+  width: 100%;
+
+  overflow: hidden;
+
+  color: #1e293b;
+
+  font-size: 12px;
+
+  font-weight: 700;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+/* ایمیل و شماره موبایل:
+   ترتیب کاراکترها انگلیسی می‌ماند
+   ولی خود متن سمت راست قرار می‌گیرد */
+
+.user-info-content strong.english-value {
+  direction: ltr;
+
+  text-align: right;
+}
+
+
+/* =========================
+   NOTE
+========================= */
+
+.user-profile-note {
+  margin-top: 16px;
+
+  padding: 13px 15px;
+
+  border: 1px solid #dbeafe;
+
+  border-radius: 10px;
+
+  background: #eff6ff;
+
+  color: #1d4ed8;
+
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: flex-start;
+
+  gap: 9px;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+.user-profile-note svg {
+  margin-top: 2px;
+
+  flex-shrink: 0;
+}
+
+
+.user-profile-note p {
+  width: 100%;
+
+  margin: 0;
+
+  color: #475569;
+
+  font-size: 10px;
+
+  font-weight: 500;
+
+  line-height: 1.9;
+
+  direction: rtl;
+
+  text-align: right;
+}
+
+
+/* =========================
+   LOADING
+========================= */
+
+.user-profile-loading {
+  min-height: 260px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  color: #64748b;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 13px;
+
+  direction: rtl;
+
+  text-align: center;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+
+.user-profile-spinner {
+  color: #2563eb;
+
+  animation:
+    user-profile-spin
+    0.8s linear infinite;
+}
+
+
+@keyframes user-profile-spin {
+
+  to {
+    transform: rotate(360deg);
+  }
+
+}
+
+
+/* =========================
+   ERROR
+========================= */
+
+.user-profile-error-card {
+  min-height: 300px;
+
+  padding: 30px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  color: #64748b;
+
+  text-align: center;
+
+  direction: rtl;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+}
+
+
+.user-profile-error-card > svg {
+  margin-bottom: 13px;
+
+  color: #94a3b8;
+}
+
+
+.user-profile-error-card h2 {
+  margin: 0 0 8px;
+
+  color: #1e293b;
+
+  font-size: 17px;
+}
+
+
+.user-profile-error-card p {
+  max-width: 500px;
+
+  margin: 0 0 17px;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  line-height: 1.9;
+}
+
+
+.user-profile-error-card button {
+  height: 39px;
+
+  padding: 0 14px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  direction: rtl;
+}
+
+
+.user-profile-error-card button:hover {
+  background: #1d4ed8;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 750px) {
+
+  .user-profile-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+@media (max-width: 550px) {
+
+  .user-profile-page {
+    width: 100%;
+  }
+
+
+  .user-profile-summary {
+    padding: 20px;
+
+    align-items: flex-start;
+
+    flex-wrap: wrap;
+  }
+
+
+  .user-profile-avatar {
+    width: 60px;
+
+    height: 60px;
+  }
+
+
+  .user-profile-status {
+    margin-right: 76px;
+  }
+
+
+  .user-profile-info-grid {
+    padding: 16px;
+  }
+
+}

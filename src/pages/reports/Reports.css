@@ -1,0 +1,240 @@
+.reports-page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  color: #0f172a;
+}
+
+.reports-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.reports-heading h1,
+.reports-panel h2 {
+  margin: 0;
+}
+
+.reports-heading h1 {
+  font-size: 24px;
+}
+
+.reports-heading p,
+.reports-panel-title p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.reports-export-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.reports-kpis {
+  display: grid;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.reports-kpi-card,
+.reports-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+}
+
+.reports-kpi-card {
+  min-height: 105px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.reports-kpi-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: grid;
+  place-items: center;
+}
+
+.reports-kpi-card span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.reports-kpi-card strong {
+  display: block;
+  margin-top: 7px;
+  font-size: 24px;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 2fr)
+    minmax(270px, 1fr);
+  gap: 16px;
+}
+
+.reports-panel {
+  padding: 20px;
+}
+
+.reports-panel-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.reports-panel-title > svg {
+  color: #2563eb;
+}
+
+.reports-panel h2 {
+  font-size: 17px;
+}
+
+.reports-chart {
+  height: 300px;
+  direction: ltr;
+}
+
+.reports-summary-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.reports-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.reports-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #e2e8f0;
+}
+
+.reports-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+}
+
+.reports-backend-note {
+  margin-top: auto;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #64748b;
+  line-height: 1.9;
+  font-size: 11px;
+}
+
+.reports-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.reports-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+.reports-table th,
+.reports-table td {
+  padding: 14px 12px;
+  text-align: right;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 12px;
+}
+
+.reports-table th {
+  color: #64748b;
+  font-weight: 700;
+  background: #f8fafc;
+}
+
+.reports-table-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.reports-table-progress > div {
+  width: 90px;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.reports-table-progress i {
+  display: block;
+  height: 100%;
+  background: #2563eb;
+}
+
+.reports-empty,
+.reports-loading {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  text-align: center;
+}
+
+@media (max-width: 1050px) {
+  .reports-kpis {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .reports-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .reports-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reports-export-button {
+    justify-content: center;
+  }
+
+  .reports-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .reports-panel {
+    padding: 15px;
+  }
+}
