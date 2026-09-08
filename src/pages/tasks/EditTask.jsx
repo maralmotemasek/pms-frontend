@@ -961,10 +961,6 @@ function EditTask() {
                 اولویت بالا
               </option>
 
-              <option value="urgent">
-                فوری
-              </option>
-
             </select>
 
           </div>
@@ -1180,3 +1176,4 @@ function EditTask() {
 
 
 export default EditTask;
+
